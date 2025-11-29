@@ -297,6 +297,37 @@
       transition: box-shadow 0.2s ease, transform 0.2s ease;
       cursor: pointer;
     }
+/* ===== 특수 칸 아이콘 + 반짝 효과 ===== */
+.cell.zone-boost::after,
+.cell.zone-slow::after,
+.cell.zone-reset::after,
+.cell.zone-gkey::after {
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* 아이콘 모양 */
+.cell.zone-boost::after { content: "⚡"; }   /* x2 칸 */
+.cell.zone-slow::after  { content: "🐢"; }   /* 1/2 칸 */
+.cell.zone-reset::after { content: "☠"; }   /* 함정 칸 */
+.cell.zone-gkey::after  { content: "🔑"; }   /* 황금열쇠 칸 */
+
+/* 은은한 네온 테두리 */
+.cell.zone-boost {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+}
+.cell.zone-slow {
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+}
+.cell.zone-reset {
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.45);
+}
+.cell.zone-gkey {
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+}
 
     .cell:hover {
       transform: translateY(-2px);
@@ -2119,3 +2150,4 @@
   </script>
 </body>
 </html>
+
