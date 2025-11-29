@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>주사위 보드게임 + 맵 에디터</title>
+  <title>주사위 보드게임</title>
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -93,9 +93,8 @@
       width: 70px;
     }
 
-    /* 텍스트 입력창 너비를 늘려서 예시 문구가 잘 보이게 조정 */
     .config input[type="text"] {
-      width: 160px; 
+      width: 140px;
     }
 
     .config label {
@@ -116,57 +115,6 @@
     .config button:active {
       transform: translateY(1px);
     }
-
-    /* 맵 에디터 툴바 스타일 */
-    .editor-toolbar {
-      width: 100%;
-      margin-top: 8px;
-      padding: 8px;
-      background: #f1f5f9;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      border: 1px dashed #cbd5e1;
-    }
-    .editor-label {
-      font-size: 13px;
-      font-weight: 700;
-      color: #334155;
-      margin-right: 4px;
-    }
-    .tool-radio {
-      display: none; /* 실제 라디오 버튼 숨김 */
-    }
-    .tool-btn {
-      padding: 4px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      background: #fff;
-      border: 1px solid #cbd5e1;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.2s;
-    }
-    .tool-btn:hover {
-      background: #f8fafc;
-    }
-    /* 선택된 도구 스타일 */
-    .tool-radio:checked + .tool-btn {
-      background: #3b82f6;
-      color: white;
-      border-color: #2563eb;
-      box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3);
-    }
-    /* 도구별 미세 색상 조정 (선택 시) */
-    #tool-x2:checked + .tool-btn { background: #ef4444; border-color: #dc2626; }
-    #tool-half:checked + .tool-btn { background: #3b82f6; border-color: #2563eb; }
-    #tool-trap:checked + .tool-btn { background: #f59e0b; border-color: #d97706; }
-    #tool-gold:checked + .tool-btn { background: #a855f7; border-color: #9333ea; }
 
     .dice-box {
       display: flex;
@@ -246,7 +194,7 @@
       transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    /* 🎲 굴리는 중일 때 – 회전 */
+    /* 🎲 굴리는 중일 때 – 회전 + 네온 */
     .dice-visual.rolling {
       animation: dice-spin 0.9s ease-out;
     }
@@ -266,9 +214,21 @@
       }
     }
 
-    /* 치트 상태일 때는 회전 애니메이션만 적용 (중복 방지) */
+    /* ✅ 변경: 치트 전용에서는 애니메이션을 여기서 지정하지 않고,
+       rolling + cheat-active일 때만 두 개를 동시에 적용 */
+    .dice-visual.cheat-active {
+      /* 네온 강조 상태만 표시 (애니메이션 없음) */
+    }
+
     .dice-visual.rolling.cheat-active {
-      animation: dice-spin 0.9s ease-out;
+      animation: dice-spin 0.9s ease-out,
+    }
+
+    @keyframes cheat-pulse {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.3); }
+      60%  { transform: scale(1.15); }
+      100% { transform: scale(1); }
     }
 
     .dice-pip-grid {
@@ -336,52 +296,43 @@
       justify-content: space-between;
       transition: box-shadow 0.2s ease, transform 0.2s ease;
       cursor: pointer;
-      user-select: none; /* 클릭 시 텍스트 선택 방지 */
     }
+/* ===== 특수 칸 아이콘 + 반짝 효과 ===== */
+.cell.zone-boost::after,
+.cell.zone-slow::after,
+.cell.zone-reset::after,
+.cell.zone-gkey::after {
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  font-size: 14px;
+  opacity: 0.9;
+}
 
-    /* ===== 특수 칸 아이콘 + 반짝 효과 ===== */
-    .cell.zone-boost::after,
-    .cell.zone-slow::after,
-    .cell.zone-reset::after,
-    .cell.zone-gkey::after {
-      position: absolute;
-      right: 6px;
-      top: 4px;
-      font-size: 14px;
-      opacity: 0.9;
-    }
+/* 아이콘 모양 */
+.cell.zone-boost::after { content: "⚡"; }   /* x2 칸 */
+.cell.zone-slow::after  { content: "🐢"; }   /* 1/2 칸 */
+.cell.zone-reset::after { content: "☠"; }   /* 함정 칸 */
+.cell.zone-gkey::after  { content: "🔑"; }   /* 황금열쇠 칸 */
 
-    /* 아이콘 모양 */
-    .cell.zone-boost::after { content: "⚡"; }   /* x2 칸 */
-    .cell.zone-slow::after  { content: "🐢"; }   /* 1/2 칸 */
-    .cell.zone-reset::after { content: "☠"; }   /* 함정 칸 */
-    .cell.zone-gkey::after  { content: "🔑"; }   /* 황금열쇠 칸 */
-
-    /* 은은한 네온 테두리 */
-    .cell.zone-boost {
-      box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
-    }
-    .cell.zone-slow {
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
-    }
-    .cell.zone-reset {
-      box-shadow: 0 0 10px rgba(234, 179, 8, 0.45);
-    }
-    .cell.zone-gkey {
-      box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
-    }
+/* 은은한 네온 테두리 */
+.cell.zone-boost {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+}
+.cell.zone-slow {
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+}
+.cell.zone-reset {
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.45);
+}
+.cell.zone-gkey {
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+}
 
     .cell:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
-      z-index: 10;
     }
-    
-    /* 에디터 모드일 때 마우스 커서 변경 */
-    .game-container.editor-mode-x2 .cell { cursor: cell; }
-    .game-container.editor-mode-half .cell { cursor: cell; }
-    .game-container.editor-mode-trap .cell { cursor: not-allowed; }
-    .game-container.editor-mode-gold .cell { cursor: alias; }
 
     .cell-index {
       font-weight: 600;
@@ -732,7 +683,7 @@
     }
 
     /* ===================== */
-    /* 테마별 색상 스킨    */
+    /*   테마별 색상 스킨    */
     /* ===================== */
 
     body.theme-default {
@@ -774,18 +725,6 @@
     body.theme-space .players-legend .player-pill {
       background: rgba(15, 23, 42, 0.9);
     }
-    body.theme-space .editor-toolbar {
-        background: #0f172a;
-        border-color: #1e293b;
-    }
-    body.theme-space .editor-label { color: #cbd5e1; }
-    body.theme-space .tool-btn {
-        background: #1e293b;
-        color: #fff;
-        border-color: #334155;
-    }
-    body.theme-space .tool-btn:hover { background: #334155; }
-
 
     body.theme-forest {
       background: linear-gradient(135deg, #064e3b, #047857);
@@ -896,18 +835,6 @@
     body.theme-neon .players-legend .player-pill {
       background: rgba(30, 64, 175, 0.7);
     }
-    body.theme-neon .editor-toolbar {
-        background: rgba(15, 23, 42, 0.95);
-        border-color: #4c1d95;
-    }
-    body.theme-neon .editor-label { color: #a5b4fc; }
-    body.theme-neon .tool-btn {
-        background: #0f172a;
-        color: #e5e7eb;
-        border-color: #4c1d95;
-    }
-    body.theme-neon .tool-btn:hover { background: #1e293b; }
-
 
     h1 {
       text-align: center;
@@ -935,7 +862,88 @@
       opacity: 0.7;
       z-index: -1;
     }
-  </style>
+  
+        /* 칸 편집 패널 (카드형 디자인) */
+    .cell-edit-card {
+      margin-top: 10px;
+      margin-bottom: 6px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f9fafb, #eef2ff);
+      border: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cell-edit-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .cell-edit-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 12px;
+      color: #111827;
+    }
+
+    .cell-edit-title-icon {
+      font-size: 14px;
+    }
+
+    .cell-edit-sub {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .cell-edit-panel {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .cell-edit-btn {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #d4d4d8;
+      background: white;
+      cursor: pointer;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .cell-edit-btn:hover {
+      border-color: #4f46e5;
+    }
+
+    .cell-edit-btn.active {
+      background: linear-gradient(135deg, #4f46e5, #2563eb);
+      color: #f9fafb;
+      border-color: #4338ca;
+      box-shadow: 0 0 0 1px rgba(191, 219, 254, 0.7),
+        0 4px 8px rgba(37, 99, 235, 0.35);
+    }
+
+    .cell-edit-btn-icon {
+      font-size: 12px;
+    }
+
+    .cell-edit-hint {
+      font-size: 11px;
+      color: #6b7280;
+    }
+</style>
 </head>
 <body class="theme-default">
   <h1>주사위 보드게임</h1>
@@ -943,7 +951,7 @@
     만든 이: 서민재
   </p>
 
-  <div class="game-container" id="gameContainer">
+  <div class="game-container">
     <div class="top-panel">
       <div class="status-block">
         <div class="status">
@@ -978,19 +986,19 @@
           </label>
           <label>
             x2 칸:
-            <input type="text" id="x2CellsInput" placeholder="예: 2,5,9 또는 2~5" />
+            <input type="text" id="x2CellsInput" placeholder="예: 2,5,9 또는 2~4" />
           </label>
           <label>
             1/2 칸:
-            <input type="text" id="halfCellsInput" placeholder="예: 4,6 또는 10~12" />
+            <input type="text" id="halfCellsInput" placeholder="예: 4,6 또는 7~9" />
           </label>
           <label>
             함정 칸(출발로):
-            <input type="text" id="resetCellsInput" placeholder="예: 1,3 또는 20~22" />
+            <input type="text" id="resetCellsInput" placeholder="예: 1,3,5 또는 10~12" />
           </label>
           <label>
             황금열쇠 칸:
-            <input type="text" id="gKeyCellsInput" placeholder="예: 7,8 또는 15~18" />
+            <input type="text" id="gKeyCellsInput" placeholder="예: 2,7 또는 10~12" />
           </label>
           <label>
             커맨드:
@@ -998,35 +1006,6 @@
           </label>
           <button id="startBtn">게임 시작 / 리셋</button>
         </div>
-        
-        <div class="editor-toolbar">
-            <span class="editor-label">🛠️ 맵 에디터:</span>
-            
-            <label>
-                <input type="radio" name="editorTool" value="none" class="tool-radio" checked id="tool-none">
-                <div class="tool-btn">👆 선택/이동(일반)</div>
-            </label>
-            <label>
-                <input type="radio" name="editorTool" value="x2" class="tool-radio" id="tool-x2">
-                <div class="tool-btn">⚡ x2 배속</div>
-            </label>
-            <label>
-                <input type="radio" name="editorTool" value="half" class="tool-radio" id="tool-half">
-                <div class="tool-btn">🐢 1/2 배속</div>
-            </label>
-            <label>
-                <input type="radio" name="editorTool" value="trap" class="tool-radio" id="tool-trap">
-                <div class="tool-btn">☠ 함정</div>
-            </label>
-            <label>
-                <input type="radio" name="editorTool" value="gold" class="tool-radio" id="tool-gold">
-                <div class="tool-btn">🔑 황금열쇠</div>
-            </label>
-        </div>
-        <div style="font-size:11px; opacity:0.7; margin-left:6px; margin-top:2px;">
-            * 도구를 선택한 뒤 보드의 칸을 클릭하여 해당 칸을 만들거나 지울 수 있습니다.
-        </div>
-
       </div>
 
       <div class="dice-box">
@@ -1045,6 +1024,52 @@
     </div>
 
     <div class="board" id="board"></div>
+
+                <div class="cell-edit-card">
+          <div class="cell-edit-header">
+            <div class="cell-edit-title">
+              <span class="cell-edit-title-icon">🛠</span>
+              <span>칸 편집 모드</span>
+            </div>
+            <div class="cell-edit-sub">
+              버튼을 고른 뒤, 위 보드 칸을 클릭해서 특수 칸으로 설정하세요.
+            </div>
+          </div>
+
+          <div class="cell-edit-panel">
+            <button type="button" class="cell-edit-btn active" data-mode="off">
+              <span class="cell-edit-btn-icon">🚫</span>
+              <span>편집 끔</span>
+            </button>
+            <button type="button" class="cell-edit-btn" data-mode="x2">
+              <span class="cell-edit-btn-icon">🚀</span>
+              <span>x2</span>
+            </button>
+            <button type="button" class="cell-edit-btn" data-mode="half">
+              <span class="cell-edit-btn-icon">🐢</span>
+              <span>1/2</span>
+            </button>
+            <button type="button" class="cell-edit-btn" data-mode="trap">
+              <span class="cell-edit-btn-icon">💣</span>
+              <span>함정</span>
+            </button>
+            <button type="button" class="cell-edit-btn" data-mode="gkey">
+              <span class="cell-edit-btn-icon">✨</span>
+              <span>황금열쇠</span>
+            </button>
+            <button type="button" class="cell-edit-btn" data-mode="clear">
+              <span class="cell-edit-btn-icon">⛔</span>
+              <span>지우기</span>
+            </button>
+          </div>
+
+          <div class="cell-edit-hint">
+            • 출발(0), 도착 칸은 편집할 수 없습니다. <br />
+            • 같은 칸에 x2/1/2/함정/황금열쇠를 겹쳐서 설정하지 않도록 주의하세요.
+          </div>
+        </div>
+
+
 
     <div class="legend">
       <div class="legend-item">
@@ -1084,6 +1109,7 @@
     </div>
   </div>
 
+  <!-- 🎵 효과음 -->
   <audio id="seClick"  src="game/click.mp3"  preload="auto"></audio>
   <audio id="seDice"   src="game/dice.mp3"   preload="auto"></audio>
   <audio id="seTrap"   src="game/trap.mp3"   preload="auto"></audio>
@@ -1096,13 +1122,10 @@
 
   <script>
     let BOARD_SIZE = 30;
-    
-    // 특수 칸 데이터를 전역 관리하여 실시간 업데이트 가능하게 함
-    let currentX2List = [];
-    let currentHalfList = [];
-    let currentResetList = [];
-    let currentGoldList = [];
-    let specialZones = []; // 게임 로직에서 쓰는 통합 데이터
+    let specialZones = [];
+    let resetCells = [];
+    let goldenKeyCells = [];
+    let cellEditMode = "off";
 
     const PLAYER_COLORS = [
       "#ef4444",
@@ -1137,7 +1160,7 @@
     const cellTokenEls = [];
 
     const boardEl = document.getElementById("board");
-    const gameContainerEl = document.getElementById("gameContainer");
+    const gameContainerEl = document.querySelector(".game-container");
     const rollBtn = document.getElementById("rollBtn");
     const skipBtn = document.getElementById("skipBtn");
     const diceInfoEl = document.getElementById("diceInfo");
@@ -1149,13 +1172,10 @@
     const playerCountSelect = document.getElementById("playerCount");
     const startBtn = document.getElementById("startBtn");
     const boardSizeInput = document.getElementById("boardSizeInput");
-    
-    // Inputs
     const x2CellsInput = document.getElementById("x2CellsInput");
     const halfCellsInput = document.getElementById("halfCellsInput");
     const resetCellsInput = document.getElementById("resetCellsInput");
     const gKeyCellsInput = document.getElementById("gKeyCellsInput");
-    
     const secretCodeInput = document.getElementById("secretCodeInput");
     const boostRangeText = document.getElementById("boostRangeText");
     const slowRangeText = document.getElementById("slowRangeText");
@@ -1168,9 +1188,7 @@
     const cheatPopupTextEl = document.getElementById("cheatPopupText");
     const cheatPopupIconEl = document.getElementById("cheatPopupIcon");
     const themeSelect = document.getElementById("themeSelect");
-
-    // Editor Tools
-    const toolRadios = document.getElementsByName("editorTool");
+    const cellEditButtons = document.querySelectorAll(".cell-edit-btn");
 
     const THEME_CLASS_LIST = [
       "theme-default",
@@ -1267,9 +1285,7 @@
       logEl.prepend(div);
     }
 
-    // 구역 찾기 (현재 업데이트된 리스트 기반)
     function findZone(pos) {
-      // specialZones를 매번 다시 빌드하거나, global 변수를 참조
       return specialZones.find((z) => pos >= z.start && pos <= z.end) || null;
     }
 
@@ -1293,13 +1309,14 @@
       diceVisualEl.style.boxShadow = "";
     }
 
+    // ✅ 변경: 플레이어 말 색 기반 네온을 좀 더 연하게 표현
     function setDiceNeonForColor(color) {
       if (!color) {
         resetDiceStyle();
         return;
       }
-      const softOuter = hexToRgba(color, 0.25);
-      const softInner = hexToRgba(color, 0.10);
+      const softOuter = hexToRgba(color, 0.25); // 바깥쪽 은은한 색
+      const softInner = hexToRgba(color, 0.10); // 안쪽 더 연한 색
 
       diceVisualEl.style.borderColor = softOuter;
       diceVisualEl.style.background =
@@ -1496,6 +1513,7 @@
       }, durationMs);
     }
 
+    // ⭐ 치트 텍스트 + 주사위 색/네온 동기화
     function showCheatText(cheats) {
       let firedText = null;
       if (cheats.triggered && cheats.triggered.length > 0) {
@@ -1610,7 +1628,6 @@
       });
     }
 
-    // 🎨 보드 그리기 (초기화 및 클릭 이벤트 바인딩)
     function renderBoard() {
       boardEl.innerHTML = "";
       cellTokenEls.length = 0;
@@ -1618,14 +1635,10 @@
       for (let i = 0; i < BOARD_SIZE; i++) {
         const cell = document.createElement("div");
         cell.className = "cell";
-        
-        // 클릭 이벤트 추가 (맵 에디터용)
-        cell.addEventListener("click", () => handleCellClick(i));
 
-        // 클래스 부여
         const zone = findZone(i);
-        const isReset = currentResetList.includes(i);
-        const isGKey = currentGoldList.includes(i);
+        const isReset = resetCells.includes(i);
+        const isGKey = goldenKeyCells.includes(i);
 
         if (zone) {
           if (zone.multiplier > 1) cell.classList.add("zone-boost");
@@ -1655,6 +1668,11 @@
           <div class="cell-zone-label">${labelText}</div>
           <div class="token-container"></div>
         `;
+
+        // 보드 칸 클릭 시 편집 모드 동작
+        cell.addEventListener("click", () => {
+          handleCellClick(i);
+        });
 
         boardEl.appendChild(cell);
         const tokenContainer = cell.querySelector(".token-container");
@@ -1693,132 +1711,170 @@
       return arr.join(", ") + "번 칸";
     }
 
-    // 🛠️ 맵 데이터 동기화 함수
-    function updateGameZonesFromInputs() {
-        // 입력창 값 읽기
-        currentX2List = parseCellList(x2CellsInput.value, BOARD_SIZE);
-        currentHalfList = parseCellList(halfCellsInput.value, BOARD_SIZE);
-        currentResetList = parseCellList(resetCellsInput.value, BOARD_SIZE);
-        currentGoldList = parseCellList(gKeyCellsInput.value, BOARD_SIZE);
-
-        // specialZones 재구성
-        specialZones = [];
-        currentX2List.forEach((n) => {
-            specialZones.push({ start: n, end: n, multiplier: 2, label: "x2 칸" });
-        });
-        currentHalfList.forEach((n) => {
-            specialZones.push({ start: n, end: n, multiplier: 0.5, label: "1/2 칸" });
-        });
-
-        updateLegendText();
-    }
-
     function updateLegendText() {
-      boostRangeText.textContent = cellsToText(currentX2List);
-      slowRangeText.textContent = cellsToText(currentHalfList);
-      resetRangeText.textContent = currentResetList.length ? currentResetList.join(", ") + "번 칸" : "없음";
-      gKeyRangeText.textContent = currentGoldList.length ? currentGoldList.join(", ") + "번 칸" : "없음";
+      const boostCells = [];
+      const slowCells = [];
+
+      for (let i = 0; i < BOARD_SIZE; i++) {
+        const zone = findZone(i);
+        if (!zone) continue;
+        if (zone.multiplier > 1) boostCells.push(i);
+        else if (zone.multiplier < 1) slowCells.push(i);
+      }
+
+      boostRangeText.textContent = cellsToText(boostCells);
+      slowRangeText.textContent = cellsToText(slowCells);
+      resetRangeText.textContent = resetCells.length ? resetCells.join(", ") + "번 칸" : "없음";
+      gKeyRangeText.textContent = goldenKeyCells.length ? goldenKeyCells.join(", ") + "번 칸" : "없음";
     }
 
-    // 🛠️ 맵 에디터: 클릭 처리
-    function handleCellClick(index) {
-        // 시작/도착점은 수정 불가
-        if (index === 0 || index === BOARD_SIZE - 1) return;
-
-        let selectedTool = 'none';
-        for(const r of toolRadios) {
-            if(r.checked) {
-                selectedTool = r.value;
-                break;
-            }
-        }
-
-        if (selectedTool === 'none') return; // 일반 모드일 땐 무시
-
-        // 1. 다른 속성이 있으면 먼저 제거 (중복 방지)
-        // ex) x2를 누르면 기존 함정, 1/2 등을 제거
-        function removeFromArray(arr, val) {
-            const idx = arr.indexOf(val);
-            if(idx > -1) arr.splice(idx, 1);
-        }
-
-        // 현재 상태를 임시 변수에 반영
-        // (이미 위에서 전역변수로 관리 중이므로, 직접 수정 후 Input에 반영)
-        
-        let targetList = null;
-        let targetInput = null;
-
-        if (selectedTool === 'x2') {
-            targetList = currentX2List;
-            targetInput = x2CellsInput;
-            removeFromArray(currentHalfList, index);
-            removeFromArray(currentResetList, index);
-            removeFromArray(currentGoldList, index);
-        } else if (selectedTool === 'half') {
-            targetList = currentHalfList;
-            targetInput = halfCellsInput;
-            removeFromArray(currentX2List, index);
-            removeFromArray(currentResetList, index);
-            removeFromArray(currentGoldList, index);
-        } else if (selectedTool === 'trap') {
-            targetList = currentResetList;
-            targetInput = resetCellsInput;
-            removeFromArray(currentX2List, index);
-            removeFromArray(currentHalfList, index);
-            removeFromArray(currentGoldList, index);
-        } else if (selectedTool === 'gold') {
-            targetList = currentGoldList;
-            targetInput = gKeyCellsInput;
-            removeFromArray(currentX2List, index);
-            removeFromArray(currentHalfList, index);
-            removeFromArray(currentResetList, index);
-        }
-
-        // 2. 토글 로직
-        if (targetList) {
-            const idx = targetList.indexOf(index);
-            if (idx > -1) {
-                targetList.splice(idx, 1); // 이미 있으면 제거
-            } else {
-                targetList.push(index);    // 없으면 추가
-                targetList.sort((a,b) => a-b);
-            }
-        }
-
-        // 3. 모든 Input 업데이트 (다른 리스트에서 제거된 것도 반영해야 하므로)
-        x2CellsInput.value = currentX2List.join(", ");
-        halfCellsInput.value = currentHalfList.join(", ");
-        resetCellsInput.value = currentResetList.join(", ");
-        gKeyCellsInput.value = currentGoldList.join(", ");
-
-        // 4. 게임 데이터 및 비주얼 갱신
-        updateGameZonesFromInputs();
-        
-        // 전체 리렌더링 대신 클래스만 업데이트하면 더 부드럽지만, 
-        // 텍스트 라벨 변경 등 복잡하므로 renderBoard()를 호출하고 토큰만 다시 얹는다.
-        // 위치 초기화 방지를 위해 renderBoard만 호출
-        renderBoard();
-        renderTokens();
+    function setCellMultiplierSingle(index, multiplier) {
+      // 해당 칸의 배속 정보를 단일 칸 기준으로 관리
+      specialZones = specialZones.filter((z) => !(z.start === index && z.end === index));
+      if (multiplier === 1) return;
+      const label = multiplier > 1 ? "x2 칸" : "1/2 칸";
+      specialZones.push({ start: index, end: index, multiplier, label });
     }
-    
-    // 🛠️ 도구 선택 시 커서 스타일 변경
-    toolRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
-            gameContainerEl.classList.remove('editor-mode-x2', 'editor-mode-half', 'editor-mode-trap', 'editor-mode-gold');
-            if(radio.value !== 'none') {
-                gameContainerEl.classList.add(`editor-mode-${radio.value}`);
-            }
-        });
-    });
 
-    // 🛠️ 입력창이 직접 변경되었을 때도 반영
-    [x2CellsInput, halfCellsInput, resetCellsInput, gKeyCellsInput].forEach(input => {
-        input.addEventListener('change', () => {
-            updateGameZonesFromInputs();
-            renderBoard();
-            renderTokens();
-        });
-    });
+    function toggleValueInArray(arr, value) {
+      const idx = arr.indexOf(value);
+      if (idx >= 0) {
+        arr.splice(idx, 1);
+        return false;
+      } else {
+        arr.push(value);
+        arr.sort((a, b) => a - b);
+        return true;
+      }
+    }
+
+    function syncInputsFromState() {
+      const x2Arr = [];
+      const halfArr = [];
+      specialZones.forEach((z) => {
+        if (z.start === z.end) {
+          if (z.multiplier > 1) x2Arr.push(z.start);
+          else if (z.multiplier < 1) halfArr.push(z.start);
+        }
+      });
+
+      const uniqSorted = (arr) => Array.from(new Set(arr)).sort((a, b) => a - b);
+
+      if (typeof x2CellsInput !== "undefined" && x2CellsInput) {
+        x2CellsInput.value = uniqSorted(x2Arr).join(", ");
+      }
+      if (typeof halfCellsInput !== "undefined" && halfCellsInput) {
+        halfCellsInput.value = uniqSorted(halfArr).join(", ");
+      }
+      if (typeof resetCellsInput !== "undefined" && resetCellsInput) {
+        resetCellsInput.value = uniqSorted(resetCells).join(", ");
+      }
+      if (typeof gKeyCellsInput !== "undefined" && gKeyCellsInput) {
+        gKeyCellsInput.value = uniqSorted(goldenKeyCells).join(", ");
+      }
+
+      updateLegendText();
+    }
+
+        function handleCellClick(index) {
+      // 편집 모드가 아니면 아무 일도 하지 않음
+      if (cellEditMode === "off") return;
+      // 출발(0), 도착(BOARD_SIZE-1)은 편집 불가
+      if (index <= 0 || index >= BOARD_SIZE - 1) return;
+
+      // 현재 보드 크기 기준으로 입력값을 다시 해석
+      let sizeVal = parseInt(boardSizeInput.value, 10);
+      if (isNaN(sizeVal) || sizeVal < 6) sizeVal = 30;
+      const boardSize = Math.max(6, Math.min(sizeVal, 200));
+
+      const x2Arr = parseCellList(x2CellsInput.value, boardSize);
+      const halfArr = parseCellList(halfCellsInput.value, boardSize);
+      const trapArr = parseCellList(resetCellsInput.value, boardSize);
+      const gkeyArr = parseCellList(gKeyCellsInput.value, boardSize);
+
+      const x2Set = new Set(x2Arr);
+      const halfSet = new Set(halfArr);
+      const trapSet = new Set(trapArr);
+      const gkeySet = new Set(gkeyArr);
+
+      let changed = false;
+
+      if (cellEditMode === "x2") {
+        if (x2Set.has(index)) {
+          x2Set.delete(index);
+        } else {
+          x2Set.add(index);
+        }
+        // x2와 1/2는 동시에 있을 수 없도록 1/2 쪽에서 제거
+        halfSet.delete(index);
+        changed = true;
+      } else if (cellEditMode === "half") {
+        if (halfSet.has(index)) {
+          halfSet.delete(index);
+        } else {
+          halfSet.add(index);
+        }
+        // 1/2를 설정하면 x2는 제거
+        x2Set.delete(index);
+        changed = true;
+      } else if (cellEditMode === "trap") {
+        if (trapSet.has(index)) {
+          trapSet.delete(index);
+        } else {
+          trapSet.add(index);
+        }
+        changed = true;
+      } else if (cellEditMode === "gkey") {
+        if (gkeySet.has(index)) {
+          gkeySet.delete(index);
+        } else {
+          gkeySet.add(index);
+        }
+        changed = true;
+      } else if (cellEditMode === "clear") {
+        const before =
+          x2Set.size + halfSet.size + trapSet.size + gkeySet.size;
+        x2Set.delete(index);
+        halfSet.delete(index);
+        trapSet.delete(index);
+        gkeySet.delete(index);
+        const after =
+          x2Set.size + halfSet.size + trapSet.size + gkeySet.size;
+        changed = before !== after;
+      }
+
+      if (!changed) return;
+
+      const sortArr = (set) => Array.from(set).sort((a, b) => a - b);
+
+      const x2New = sortArr(x2Set);
+      const halfNew = sortArr(halfSet);
+      const trapNew = sortArr(trapSet);
+      const gkeyNew = sortArr(gkeySet);
+
+      // 입력창 문자열 갱신
+      x2CellsInput.value = x2New.join(", ");
+      halfCellsInput.value = halfNew.join(", ");
+      resetCellsInput.value = trapNew.join(", ");
+      gKeyCellsInput.value = gkeyNew.join(", ");
+
+      // 실제 게임 상태(specialZones, resetCells, goldenKeyCells)도 다시 구성
+      specialZones = [];
+      x2New.forEach((n) => {
+        specialZones.push({ start: n, end: n, multiplier: 2, label: "x2 칸" });
+      });
+      halfNew.forEach((n) => {
+        specialZones.push({ start: n, end: n, multiplier: 0.5, label: "1/2 칸" });
+      });
+      resetCells = trapNew;
+      goldenKeyCells = gkeyNew;
+
+      // 보드/말 및 범례 갱신
+      renderBoard();
+      renderTokens();
+      updateLegendText();
+    }
+
 
 
     function animateMove(player, steps, onComplete) {
@@ -1990,7 +2046,7 @@
         log(`🛡 치트: ${player.name}이(가) 해로운 효과를 2번까지 막아주는 보호막을 얻었습니다.`);
       }
 
-      if (currentResetList.includes(player.position)) {
+      if (resetCells.includes(player.position)) {
         const trapPos = player.position;
 
         if (player.trapImmune) {
@@ -2135,7 +2191,7 @@
         return;
       }
 
-      if (currentGoldList.includes(player.position)) {
+      if (goldenKeyCells.includes(player.position)) {
         grantRandomCheatFromGoldenKey(player);
       }
 
@@ -2300,8 +2356,20 @@
       if (isNaN(sizeVal) || sizeVal < 6) sizeVal = 30;
       BOARD_SIZE = Math.max(6, Math.min(sizeVal, 200));
 
-      // 입력값 로드 및 초기화
-      updateGameZonesFromInputs();
+      specialZones = [];
+
+      const x2Cells = parseCellList(x2CellsInput.value, BOARD_SIZE);
+      x2Cells.forEach((n) => {
+        specialZones.push({ start: n, end: n, multiplier: 2, label: "x2 칸" });
+      });
+
+      const halfCells = parseCellList(halfCellsInput.value, BOARD_SIZE);
+      halfCells.forEach((n) => {
+        specialZones.push({ start: n, end: n, multiplier: 0.5, label: "1/2 칸" });
+      });
+
+      resetCells = parseCellList(resetCellsInput.value, BOARD_SIZE);
+      goldenKeyCells = parseCellList(gKeyCellsInput.value, BOARD_SIZE);
 
       const count = parseInt(playerCountSelect.value, 10);
       players = [];
@@ -2326,6 +2394,7 @@
       renderBoard();
       renderTokens();
       renderPlayersLegend();
+      updateLegendText();
       updateStatusText();
 
       logEl.innerHTML = "";
@@ -2337,10 +2406,6 @@
       cheatTextEl.style.color = "#4b5563";
       rollBtn.disabled = false;
       skipBtn.disabled = false;
-
-      // 도구 초기화 (선택/이동으로)
-      document.getElementById('tool-none').checked = true;
-      gameContainerEl.classList.remove('editor-mode-x2', 'editor-mode-half', 'editor-mode-trap', 'editor-mode-gold');
 
       applyTheme(themeSelect.value);
     }
@@ -2362,6 +2427,17 @@
     themeSelect.addEventListener("change", (e) => {
       applyTheme(e.target.value);
     });
+
+    if (cellEditButtons && cellEditButtons.length) {
+      cellEditButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          cellEditButtons.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          cellEditMode = btn.dataset.mode || "off";
+          playSound("click");
+        });
+      });
+    }
 
     applyTheme(themeSelect.value);
     setupGame();
