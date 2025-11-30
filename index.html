@@ -1464,6 +1464,7 @@ body.theme-space::after {
           </label>
 
           <button id="startBtn">게임 시작 / 리셋</button>
+  <button id="soundToggleBtn" type="button">🔊 효과음 켜짐</button>
         </div>
       </div>
 
@@ -1667,6 +1668,7 @@ body.theme-space::after {
     const themeSelect = document.getElementById("themeSelect");
     const cellEditButtons = document.querySelectorAll(".cell-edit-btn");
     const cellEditCardEl = document.getElementById("cellEditCard");
+    const soundToggleBtn = document.getElementById("soundToggleBtn");
     const cellEditBodyEl = document.getElementById("cellEditBody");
     const cellEditToggleBtn = document.getElementById("cellEditToggleBtn");
 
@@ -1698,6 +1700,9 @@ body.theme-space::after {
     };
 
     function playSound(name) {
+      // 🔇 효과음이 꺼져 있으면 아무 소리도 재생하지 않음
+      if (!isSoundOn) return;
+
       const audio = soundMap[name];
       if (!audio) return;
       try {
@@ -1706,7 +1711,9 @@ body.theme-space::after {
       } catch (e) {}
     }
 
+
     let popupTimerId = null;
+    let isSoundOn = true; // 효과음 켜짐/꺼짐 상태
 
     // ⭐ HEX → rgba 변환 (네온 그라데이션용)
     function hexToRgba(hex, alpha) {
@@ -2918,6 +2925,21 @@ body.theme-space::after {
         });
       });
     }
+    // 🔊 / 🔇 효과음 켜기/끄기 토글
+    if (soundToggleBtn) {
+      soundToggleBtn.addEventListener("click", () => {
+        isSoundOn = !isSoundOn;
+        soundToggleBtn.textContent = isSoundOn
+          ? "🔊 효과음 켜짐"
+          : "🔇 효과음 꺼짐";
+        // 켜진 상태로 바뀔 때만 살짝 클릭 소리 내고 싶으면 아래 한 줄 주석 해제
+        // if (isSoundOn) playSound("click");
+      });
+
+      // 처음 로드 시 버튼 텍스트 초기화
+      soundToggleBtn.textContent = "🔊 효과음 켜짐";
+    }
+
   // 🔽 칸 편집 모드 접기 / 펼치기
     if (cellEditToggleBtn && cellEditCardEl && cellEditBodyEl) {
       cellEditToggleBtn.addEventListener("click", () => {
