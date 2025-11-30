@@ -2198,22 +2198,32 @@ body.theme-space::after {
       return arr.join(", ") + "번 칸";
     }
 
-    function updateLegendText() {
-      const boostCells = [];
-      const slowCells = [];
+   function updateLegendText() {
+  // ⚠ 범례 표시용 DOM 요소(텍스트)가 현재 화면에 없으므로
+  //    없으면 그냥 아무 것도 하지 않고 빠져나오도록 예외 처리
+  if (!boostRangeText || !slowRangeText || !resetRangeText || !gKeyRangeText) {
+    return;
+  }
 
-      for (let i = 0; i < BOARD_SIZE; i++) {
-        const zone = findZone(i);
-        if (!zone) continue;
-        if (zone.multiplier > 1) boostCells.push(i);
-        else if (zone.multiplier < 1) slowCells.push(i);
-      }
+  const boostCells = [];
+  const slowCells = [];
 
-      boostRangeText.textContent = cellsToText(boostCells);
-      slowRangeText.textContent = cellsToText(slowCells);
-      resetRangeText.textContent = resetCells.length ? resetCells.join(", ") + "번 칸" : "없음";
-      gKeyRangeText.textContent = goldenKeyCells.length ? goldenKeyCells.join(", ") + "번 칸" : "없음";
-    }
+  for (let i = 0; i < BOARD_SIZE; i++) {
+    const zone = findZone(i);
+    if (!zone) continue;
+    if (zone.multiplier > 1) boostCells.push(i);
+    else if (zone.multiplier < 1) slowCells.push(i);
+  }
+
+  boostRangeText.textContent = cellsToText(boostCells);
+  slowRangeText.textContent = cellsToText(slowCells);
+  resetRangeText.textContent = resetCells.length
+    ? resetCells.join(", ") + "번 칸"
+    : "없음";
+  gKeyRangeText.textContent = goldenKeyCells.length
+    ? goldenKeyCells.join(", ") + "번 칸"
+    : "없음";
+}
 
     function setCellMultiplierSingle(index, multiplier) {
       // 해당 칸의 배속 정보를 단일 칸 기준으로 관리
@@ -2754,7 +2764,8 @@ body.theme-space::after {
 
     // 🎲 주사위 굴리기
     function startRoll() {
-      if (gameOver || isAnimating || isRollingDice || players.length === 0) return;
+  // 🔧 gameOver 체크 제거
+  if (isAnimating || isRollingDice || players.length === 0) return;
 
       const player = players[currentPlayerIndex];
       if (player.skipTurnsRemaining && player.skipTurnsRemaining > 0) {
