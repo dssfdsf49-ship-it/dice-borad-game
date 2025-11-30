@@ -4,17 +4,65 @@
   <meta charset="UTF-8" />
   <title>주사위 보드게임</title>
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 20px;
-      background: #f5f5f7;
-    }
+/* 🎯 주사위 옆 치트 커맨드 입력 */
+.cheat-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-left: 6px; /* 치트 배지랑 살짝 띄우기 */
+}
+
+.cheat-input input {
+  width: 90px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid #d4d4d8;
+  font-size: 12px;
+  background: #f9fafb;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin: 0;          /* 🔹 바깥 여백 제거 */
+  padding: 20px;      /* 🔹 대신 안쪽 여백으로 변경 */
+  background: #f5f5f7;
+}
 
     h1 {
       text-align: center;
       margin-bottom: 4px;
     }
+/* 우주/네온 테마에서
+   - 설정줄(.config)은 항상 검은색
+   - 상태줄(.status)은 기본 글씨만 밝게, 플레이어 이름은 말 색 그대로 사용 */
+body.theme-space .config,
+body.theme-space .config *,
+body.theme-neon .config,
+body.theme-neon .config * {
+  color: #111827 !important;   /* 설정창만 강제로 검정 */
+}
 
+/* 우주/네온 테마에서 상태줄은 항상 진한 글씨색 사용
+   (플레이어 이름은 JS가 inline style로 색을 주기 때문에 그대로 유지됨) */
+body.theme-space .status,
+body.theme-space .status span,
+body.theme-neon .status,
+body.theme-neon .status span {
+  color: #111827;
+}
+
+
+
+
+
+/* 우주/네온 테마에서 상단 설정 줄(.config) 안 글씨는 항상 검은색 */
+body.theme-space .config,
+body.theme-space .config *,
+body.theme-neon .config,
+body.theme-neon .config * {
+  color: #111827 !important; /* 진한 검정에 가까운 색 */
+}
     .game-container {
       max-width: 900px;
       margin: 0 auto;
@@ -27,17 +75,17 @@
       overflow: hidden;
     }
 
-    .top-panel {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      position: relative;
-      padding-bottom: 12px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
-    }
+.top-panel {
+  display: flex;
+  flex-direction: column;   /* 위: 상태창, 아래: 주사위 박스가 세로로 쌓이도록 */
+  align-items: center;      /* 두 박스를 가로 가운데 정렬 */
+  gap: 12px;
+  margin-bottom: 16px;
+  position: relative;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+}
+
 
     .top-panel::after {
       content: "";
@@ -84,7 +132,8 @@
 
     .config select,
     .config input[type="number"],
-    .config input[type="text"] {
+    .config input[type="text"],
+    .cell-range-edit input[type="text"] {
       padding: 2px 6px;
       border-radius: 999px;
       border: 1px solid #d4d4d8;
@@ -93,8 +142,24 @@
       width: 70px;
     }
 
-    .config input[type="text"] {
+    .config input[type="text"],
+    .cell-range-edit input[type="text"] {
       width: 140px;
+    }
+
+    /* 🔧 칸 편집 모드 아래에 들어가는 범위 입력창 스타일 */
+    .cell-range-edit {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .cell-range-edit label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .config label {
@@ -196,8 +261,8 @@
 
     
     /* 🎲 굴리는 중일 때 – 굴러가는 모션 (살짝만) */
-      .dice-visual.rolling {
-      /* 오른쪽으로 굴러가면서 2바퀴 회전 */
+    .dice-visual.rolling {
+      /* 살짝 오른쪽으로 굴러가면서 1바퀴만 회전 */
       animation: dice-roll 0.7s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
 
@@ -206,19 +271,18 @@
         transform: translateX(0px) translateY(0px) rotateZ(0deg);
       }
       20% {
-        transform: translateX(6px) translateY(-3px) rotateZ(180deg);   /* 1/4 지점 */
+        transform: translateX(6px) translateY(-3px) rotateZ(180deg);
       }
       50% {
-        transform: translateX(10px) translateY(-1px) rotateZ(360deg);  /* 한 바퀴 */
+        transform: translateX(10px) translateY(-1px) rotateZ(360deg);
       }
       80% {
-        transform: translateX(4px) translateY(1px) rotateZ(540deg);    /* 한 바퀴 반 */
+        transform: translateX(4px) translateY(1px) rotateZ(540deg);
       }
       100% {
-        transform: translateX(0px) translateY(0px) rotateZ(720deg);    /* 두 바퀴 */
+        transform: translateX(0px) translateY(0px) rotateZ(720deg);
       }
     }
-
 
     /* 치트 주사위: 클래스 자체는 네온 스타일만 표시 (애니메이션은 rolling 때만 적용) */
     .dice-visual.cheat-active {
@@ -742,12 +806,27 @@
       background: rgba(15, 23, 42, 0.9);
       border-color: #1f2937;
     }
-    body.theme-space .players-legend .player-pill {
-      background: rgba(15, 23, 42, 0.9);
-    }
+/* 우주 테마: 누구 차례인지 더 눈에 띄게 */
+body.theme-space .players-legend .player-pill {
+  background: transparent;          /* 기본은 배경 투명 */
+  border-color: transparent;
+  color: #e5e7eb;                   /* 글씨는 밝게 */
+}
+
+/* 우주 테마에서 현재 턴인 플레이어 pill */
+body.theme-space .players-legend .player-pill.current-turn {
+  background: #0b1120;              /* 진한 남색 캡슐 */
+  border-color: #facc15;            /* 황금색 테두리 */
+  box-shadow:
+    0 0 0 2px rgba(248, 250, 252, 0.9),
+    0 0 12px rgba(250, 204, 21, 0.85);  /* 살짝 빛나는 효과 */
+}
+
 
     body.theme-forest {
-      background: linear-gradient(135deg, #064e3b, #047857);
+      background:
+        linear-gradient(to top, #bbf7d0 0%, #86efac 35%, #22c55e 38%, #16a34a 41%, #14532d 43%),
+        linear-gradient(to top, #bbf7d0 0%, #bbf7d0 42%, #e0f2fe 80%, #bfdbfe 100%);
     }
     body.theme-forest .game-container {
       background: #ecfdf5;
@@ -852,9 +931,21 @@
       background: rgba(15, 23, 42, 0.95);
       border-color: #4c1d95;
     }
-    body.theme-neon .players-legend .player-pill {
-      background: rgba(30, 64, 175, 0.7);
-    }
+/* 네온 테마: 현재 턴 pill 강조 */
+body.theme-neon .players-legend .player-pill {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: transparent;
+  color: #e5e7eb;
+}
+
+body.theme-neon .players-legend .player-pill.current-turn {
+  background: #020617;
+  border-color: #22d3ee;              /* 시안색 테두리 */
+  box-shadow:
+    0 0 0 2px rgba(244, 244, 245, 0.9),
+    0 0 14px rgba(56, 189, 248, 0.9);
+}
+
 
     h1 {
       text-align: center;
@@ -895,13 +986,33 @@
       flex-direction: column;
       gap: 6px;
     }
+    /* 🔽 칸 편집 모드 접기/펼치기 버튼 */
+    .cell-edit-toggle {
+      margin-left: 8px;             /* 제목 오른쪽에 살짝만 띄우기 */
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid #d4d4d8;
+      background: #e5e7eb;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+
+    /* 접힌 상태에서는 내용(body)만 숨김 */
+    .cell-edit-card.collapsed .cell-edit-body {
+      display: none;
+    }
+
+
 
     .cell-edit-header {
       display: flex;
       flex-wrap: wrap;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 8px;
+      align-items: center;
+      justify-content: flex-start;  /* 제목 + 버튼을 왼쪽에 모으기 */
+      column-gap: 8px;              /* 가로 간격 */
+      row-gap: 4px;                 /* 세로 간격 */
     }
 
     .cell-edit-title {
@@ -920,7 +1031,10 @@
     .cell-edit-sub {
       font-size: 11px;
       color: #6b7280;
+      flex-basis: 100%;     /* 제목/버튼 아래 줄 전체를 차지하게 */
+      margin-left: 22px;    /* 아이콘/제목 밑으로 살짝 들여쓰기 */
     }
+
 
     .cell-edit-panel {
       display: flex;
@@ -1019,38 +1133,6 @@
         0 0 14px rgba(250, 249, 150, 0.72);  /* 직전보다 살짝만 더 강해진 네온 */
     }
 
-    /* 🌌 우주 테마: 이미지 없이 CSS만으로 별이 반짝이는 느낌 추가 */
-    body.theme-space::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: -1;
-      background-image:
-        radial-gradient(2px 2px at 20% 20%, rgba(248, 250, 252, 0.9), transparent 55%),
-        radial-gradient(1.5px 1.5px at 70% 30%, rgba(226, 232, 240, 0.8), transparent 55%),
-        radial-gradient(2px 2px at 40% 70%, rgba(248, 250, 252, 0.85), transparent 55%),
-        radial-gradient(1.5px 1.5px at 85% 80%, rgba(226, 232, 240, 0.8), transparent 55%),
-        radial-gradient(1px 1px at 10% 80%, rgba(248, 250, 252, 0.7), transparent 55%),
-        radial-gradient(1px 1px at 55% 10%, rgba(226, 232, 240, 0.75), transparent 55%);
-      opacity: 0.65;
-      mix-blend-mode: screen;
-  animation: starTwinkle 10s ease-in-out infinite alternate;
-}
-@keyframes starTwinkle {
-  0% {
-    opacity: 0.65;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.75;
-  }
-}
-
-    
-
     /* 💡 네온 테마: 이미지 없이 네온 격자 + 빛나는 중심부 표현 */
     body.theme-neon::before {
       content: "";
@@ -1084,18 +1166,18 @@
       pointer-events: none;
       z-index: -1;
       background-image:
-        radial-gradient(2px 2px at 10% 15%, rgba(248, 250, 252, 0.95), transparent 55%),
-        radial-gradient(1.5px 1.5px at 25% 30%, rgba(226, 232, 240, 0.9), transparent 55%),
-        radial-gradient(2.2px 2.2px at 40% 20%, rgba(248, 250, 252, 0.95), transparent 55%),
-        radial-gradient(1.8px 1.8px at 65% 18%, rgba(226, 232, 240, 0.9), transparent 55%),
-        radial-gradient(1.6px 1.6px at 80% 28%, rgba(248, 250, 252, 0.9), transparent 55%),
-        radial-gradient(2px 2px at 20% 65%, rgba(226, 232, 240, 0.9), transparent 55%),
-        radial-gradient(1.5px 1.5px at 50% 75%, rgba(248, 250, 252, 0.95), transparent 55%),
-        radial-gradient(2px 2px at 72% 68%, rgba(226, 232, 240, 0.9), transparent 55%),
-        radial-gradient(1.4px 1.4px at 88% 82%, rgba(248, 250, 252, 0.9), transparent 55%),
-        radial-gradient(1.2px 1.2px at 15% 85%, rgba(226, 232, 240, 0.85), transparent 55%),
-        radial-gradient(2.4px 2.4px at 55% 10%, rgba(248, 250, 252, 0.98), transparent 55%);
-      opacity: 0.8;
+        radial-gradient(2px 2px at 10% 15%, rgba(248, 250, 252, 1.0), transparent 55%),
+        radial-gradient(1.5px 1.5px at 25% 30%, rgba(226, 232, 240, 1.0), transparent 55%),
+        radial-gradient(2.2px 2.2px at 40% 20%, rgba(248, 250, 252, 1.0), transparent 55%),
+        radial-gradient(1.8px 1.8px at 65% 18%, rgba(226, 232, 240, 1.0), transparent 55%),
+        radial-gradient(1.6px 1.6px at 80% 28%, rgba(248, 250, 252, 1.0), transparent 55%),
+        radial-gradient(2px 2px at 20% 65%, rgba(226, 232, 240, 1.0), transparent 55%),
+        radial-gradient(1.5px 1.5px at 50% 75%, rgba(248, 250, 252, 1.0), transparent 55%),
+        radial-gradient(2px 2px at 72% 68%, rgba(226, 232, 240, 1.0), transparent 55%),
+        radial-gradient(1.4px 1.4px at 88% 82%, rgba(248, 250, 252, 1.0), transparent 55%),
+        radial-gradient(1.2px 1.2px at 15% 85%, rgba(226, 232, 240, 1.0), transparent 55%),
+        radial-gradient(2.4px 2.4px at 55% 10%, rgba(248, 250, 252, 1.0), transparent 55%);
+      opacity: 1.0;
       mix-blend-mode: screen;
     }
 
@@ -1136,531 +1218,59 @@
       opacity: 1.0;              /* 완전한 밝기 */
       mix-blend-mode: screen;    /* 어두운 배경 위에서 하얀 별이 잘 보이도록 */
     }
+/* 🌌 우주 테마: 별 100개 정도 (가벼운 버전) */
+body.theme-space::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.95;
+  mix-blend-mode: screen;
+  background-image:
+    radial-gradient(1.8px 1.8px at 10% 10%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 25% 18%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.6px 1.6px at 40% 14%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.9px 1.9px at 60% 12%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.5px 1.5px at 78% 20%, rgba(226, 232, 240, 1.0), transparent 60%),
 
-    /* 🌌 우주 테마: 별 200개 버전 (CSS만 사용) */
-    body.theme-space::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: -1;
-      background-image:
-        radial-gradient(1.24px 1.24px at 63.9% 2.5%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(2.23px 2.23px at 73.6% 67.7%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(1.15px 1.15px at 42.2% 3.0%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.84px 1.84px at 2.7% 19.9%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(2.1px 2.1px at 22.0% 58.9%, rgba(255, 255, 255, 0.7), transparent 60%),
-        radial-gradient(1.34px 1.34px at 80.6% 69.8%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(0.95px 0.95px at 95.7% 33.7%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(2.09px 2.09px at 84.7% 60.4%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.41px 1.41px at 53.6% 97.3%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(2.18px 2.18px at 82.9% 61.9%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.16px 1.16px at 70.5% 4.6%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(0.96px 0.96px at 8.0% 23.3%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.39px 1.39px at 63.6% 36.5%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.84px 1.84px at 26.7% 93.7%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.06px 1.06px at 17.1% 72.9%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(1.69px 1.69px at 99.0% 64.0%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.17px 1.17px at 84.3% 77.6%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(1.14px 1.14px at 31.5% 26.8%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(1.85px 1.85px at 87.6% 31.5%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(1.22px 1.22px at 91.5% 45.9%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.74px 1.74px at 56.1% 26.3%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(2.4px 2.4px at 39.9% 21.9%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(0.98px 0.98px at 9.1% 4.7%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(0.9px 0.9px at 79.2% 42.2%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(2.35px 2.35px at 99.6% 52.9%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.89px 1.89px at 1.1% 72.1%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(0.98px 0.98px at 26.7% 64.1%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(2.2px 2.2px at 45.4% 95.4%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(2.26px 2.26px at 50.1% 17.9%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.77px 1.77px at 29.8% 63.9%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(2.05px 2.05px at 76.3% 53.9%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(0.83px 0.83px at 0.1% 32.4%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(1.29px 1.29px at 87.9% 83.2%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(0.94px 0.94px at 87.8% 94.7%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(2.03px 2.03px at 6.9% 76.1%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.22px 1.22px at 47.5% 55.0%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.66px 1.66px at 42.3% 21.2%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(2.39px 2.39px at 20.1% 31.2%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(0.99px 0.99px at 43.8% 51.8%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.17px 1.17px at 33.8% 58.8%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.17px 1.17px at 7.1% 63.1%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.18px 1.18px at 86.0% 7.1%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(2.3px 2.3px at 21.4% 13.2%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(2.09px 2.09px at 47.3% 78.5%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.48px 1.48px at 9.7% 43.1%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(2.37px 2.37px at 72.9% 67.3%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(2.18px 2.18px at 40.3% 33.9%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.48px 1.48px at 19.0% 44.9%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.51px 1.51px at 25.0% 92.3%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(2.4px 2.4px at 55.0% 5.1%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(2.16px 2.16px at 96.9% 92.6%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(1.44px 1.44px at 48.6% 21.4%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(1.22px 1.22px at 37.9% 98.5%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(2.33px 2.33px at 45.5% 42.3%, rgba(255, 255, 255, 1.0), transparent 60%),
-        radial-gradient(1.05px 1.05px at 55.6% 71.8%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.67px 1.67px at 96.9% 57.9%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.6px 1.6px at 5.7% 58.4%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(0.93px 0.93px at 15.7% 96.1%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.18px 1.18px at 59.5% 67.5%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.75px 1.75px at 89.0% 24.6%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(1.64px 1.64px at 41.9% 58.4%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(1.18px 1.18px at 20.4% 71.6%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(1.31px 1.31px at 67.2% 30.0%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(2.4px 2.4px at 7.3% 45.8%, rgba(255, 255, 255, 1.0), transparent 60%),
-        radial-gradient(1.22px 1.22px at 7.3% 21.3%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(1.39px 1.39px at 88.1% 87.9%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(1.78px 1.78px at 83.4% 70.4%, rgba(255, 255, 255, 1.0), transparent 60%),
-        radial-gradient(2.11px 2.11px at 65.4% 0.8%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.01px 1.01px at 66.3% 93.9%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(1.24px 1.24px at 10.7% 55.3%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.81px 1.81px at 71.8% 20.4%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(2.15px 2.15px at 48.9% 90.5%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(0.81px 0.81px at 42.4% 27.7%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(1.99px 1.99px at 63.7% 26.2%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(0.92px 0.92px at 42.8% 1.0%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(2.14px 2.14px at 90.4% 54.6%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.29px 1.29px at 14.8% 12.7%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(2.24px 2.24px at 79.6% 86.1%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(2.05px 2.05px at 25.0% 10.3%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.05px 1.05px at 40.6% 62.1%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(2.1px 2.1px at 86.5% 97.6%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.33px 1.33px at 2.5% 73.7%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(2.1px 2.1px at 80.2% 86.4%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(2.2px 2.2px at 78.7% 10.8%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.54px 1.54px at 22.2% 81.7%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(0.84px 0.84px at 79.5% 22.8%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(2.35px 2.35px at 32.8% 86.4%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(2.37px 2.37px at 64.1% 40.0%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(2.35px 2.35px at 93.9% 11.5%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(0.97px 0.97px at 96.3% 26.5%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.77px 1.77px at 72.9% 31.4%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.21px 1.21px at 38.5% 57.7%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.66px 1.66px at 0.2% 92.6%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.38px 1.38px at 74.2% 67.1%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(1.3px 1.3px at 66.4% 33.0%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(1.29px 1.29px at 72.0% 30.0%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(1.0px 1.0px at 40.2% 29.6%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(2.24px 2.24px at 94.0% 67.7%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(0.8px 0.8px at 30.1% 54.8%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.85px 1.85px at 43.0% 58.0%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(1.56px 1.56px at 44.2% 21.4%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(0.94px 0.94px at 79.6% 17.0%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(2.11px 2.11px at 63.3% 33.5%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(1.12px 1.12px at 67.3% 22.5%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(2.16px 2.16px at 24.5% 47.5%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(1.11px 1.11px at 41.4% 63.0%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.85px 1.85px at 49.4% 24.4%, rgba(255, 255, 255, 0.7), transparent 60%),
-        radial-gradient(0.97px 0.97px at 75.1% 77.0%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.63px 1.63px at 17.6% 95.8%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(1.53px 1.53px at 24.9% 84.8%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.75px 1.75px at 66.8% 98.8%, rgba(255, 255, 255, 0.99), transparent 60%),
-        radial-gradient(1.95px 1.95px at 89.1% 61.3%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(2.24px 2.24px at 83.1% 54.8%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.2px 1.2px at 47.5% 25.9%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(1.8px 1.8px at 76.6% 52.1%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.23px 1.23px at 7.7% 28.6%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(1.17px 1.17px at 54.0% 13.8%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.45px 1.45px at 70.6% 6.4%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(1.47px 1.47px at 41.6% 20.7%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(2.17px 2.17px at 58.4% 69.6%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(1.36px 1.36px at 38.0% 0.6%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(1.47px 1.47px at 85.3% 95.3%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.15px 1.15px at 54.6% 60.3%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.34px 1.34px at 43.6% 2.9%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.55px 1.55px at 40.4% 16.5%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.43px 1.43px at 62.2% 2.7%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.02px 1.02px at 2.7% 64.3%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(1.14px 1.14px at 5.0% 37.9%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(2.0px 2.0px at 76.1% 37.9%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(0.83px 0.83px at 25.2% 8.2%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(1.84px 1.84px at 100.0% 35.0%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(2.32px 2.32px at 65.2% 75.4%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.0px 1.0px at 2.0% 15.2%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.92px 1.92px at 56.4% 21.8%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(2.0px 2.0px at 16.8% 60.7%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(0.97px 0.97px at 81.9% 96.5%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(2.33px 2.33px at 31.2% 67.7%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(1.9px 1.9px at 71.5% 7.6%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(2.16px 2.16px at 10.2% 77.2%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(2.05px 2.05px at 12.1% 98.4%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(1.61px 1.61px at 42.8% 37.1%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(0.97px 0.97px at 85.0% 82.2%, rgba(255, 255, 255, 0.99), transparent 60%),
-        radial-gradient(1.93px 1.93px at 63.6% 82.9%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.23px 1.23px at 73.4% 96.5%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.5px 1.5px at 53.8% 48.3%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(2.13px 2.13px at 26.8% 85.2%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(1.54px 1.54px at 88.2% 24.4%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(2.16px 2.16px at 37.9% 2.9%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(1.34px 1.34px at 21.2% 79.8%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(0.82px 0.82px at 70.1% 27.6%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(1.58px 1.58px at 8.6% 72.0%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(1.59px 1.59px at 69.1% 64.6%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.91px 1.91px at 9.3% 22.2%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.65px 1.65px at 58.2% 47.3%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.92px 1.92px at 74.6% 33.1%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.11px 1.11px at 25.1% 12.1%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.1px 1.1px at 53.6% 76.2%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(2.36px 2.36px at 48.4% 72.5%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(1.11px 1.11px at 28.3% 10.1%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.65px 1.65px at 17.9% 1.4%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.92px 1.92px at 97.4% 55.3%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(2.2px 2.2px at 86.8% 49.1%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.09px 1.09px at 46.9% 44.0%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(2.12px 2.12px at 94.1% 47.8%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(0.89px 0.89px at 7.4% 62.9%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(2.39px 2.39px at 56.3% 30.4%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(2.07px 2.07px at 76.4% 60.6%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.51px 1.51px at 52.3% 45.1%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.79px 1.79px at 99.0% 30.5%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.13px 1.13px at 74.0% 94.8%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.08px 1.08px at 66.0% 15.7%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(1.75px 1.75px at 0.3% 45.1%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.92px 1.92px at 23.1% 70.7%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(2.06px 2.06px at 68.7% 92.4%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(1.48px 1.48px at 66.1% 93.4%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(2.12px 2.12px at 64.8% 90.8%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(2.0px 2.0px at 16.6% 30.8%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.9px 1.9px at 28.9% 12.4%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.59px 1.59px at 94.3% 50.0%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(1.32px 1.32px at 4.0% 43.2%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(2.14px 2.14px at 9.1% 96.2%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.88px 1.88px at 95.1% 100.0%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.55px 1.55px at 4.0% 75.6%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.74px 1.74px at 91.6% 18.1%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(1.36px 1.36px at 49.2% 9.1%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(1.33px 1.33px at 67.0% 85.8%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(2.1px 2.1px at 28.8% 94.5%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.32px 1.32px at 45.5% 31.5%, rgba(255, 255, 255, 0.99), transparent 60%),
-        radial-gradient(2.38px 2.38px at 40.4% 51.5%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.1px 1.1px at 54.3% 41.3%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(2.02px 2.02px at 75.6% 62.5%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.5px 1.5px at 54.9% 92.8%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.77px 1.77px at 12.1% 97.3%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.68px 1.68px at 15.8% 55.1%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(1.54px 1.54px at 99.2% 91.3%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.95px 1.95px at 83.2% 49.8%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(2.37px 2.37px at 27.3% 83.5%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(2.27px 2.27px at 55.1% 38.4%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.24px 1.24px at 87.9% 86.4%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.61px 1.61px at 41.5% 93.4%, rgba(255, 255, 255, 0.95), transparent 60%);
-      opacity: 1.0;
-      mix-blend-mode: screen;
-    }
+    radial-gradient(1.4px 1.4px at 15% 30%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.8px 1.8px at 35% 32%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.3px 1.3px at 55% 28%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.7px 1.7px at 72% 35%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 90% 30%, rgba(255, 255, 255, 1.0), transparent 60%),
 
-    /* 🌌 우주 테마: 별 300개 버전 (CSS만 사용) */
-    body.theme-space::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: -1;
-      background-image:
-        radial-gradient(1.03px 1.03px at 3.9% 69.6%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(1.53px 1.53px at 67.2% 79.3%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.4px 1.4px at 1.9% 43.2%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.49px 1.49px at 54.7% 75.5%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(1.4px 1.4px at 85.1% 82.0%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(2.04px 2.04px at 51.2% 49.6%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.4px 1.4px at 50.7% 57.5%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(2.14px 2.14px at 6.1% 94.2%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(0.96px 0.96px at 88.9% 52.2%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.89px 1.89px at 58.4% 93.3%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(2.24px 2.24px at 62.3% 78.7%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(1.07px 1.07px at 52.9% 70.1%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(1.75px 1.75px at 78.1% 5.0%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(2.35px 2.35px at 18.6% 60.4%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(2.05px 2.05px at 11.3% 49.5%, rgba(255, 255, 255, 0.99), transparent 60%),
-        radial-gradient(2.35px 2.35px at 71.5% 4.1%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(0.94px 0.94px at 8.4% 12.7%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(0.97px 0.97px at 15.4% 80.7%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(0.8px 0.8px at 44.3% 3.8%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.98px 1.98px at 97.7% 12.4%, rgba(255, 255, 255, 1.0), transparent 60%),
-        radial-gradient(1.34px 1.34px at 90.4% 88.5%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.92px 1.92px at 49.8% 93.7%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(1.94px 1.94px at 85.7% 38.6%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(1.45px 1.45px at 20.6% 93.7%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.74px 1.74px at 57.6% 26.0%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.1px 1.1px at 32.7% 34.7%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(2.34px 2.34px at 82.7% 70.6%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.1px 1.1px at 95.9% 22.2%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.16px 1.16px at 38.4% 99.0%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(1.67px 1.67px at 6.1% 2.7%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(2.18px 2.18px at 51.1% 91.5%, rgba(255, 255, 255, 0.99), transparent 60%),
-        radial-gradient(1.01px 1.01px at 57.9% 26.3%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(1.92px 1.92px at 15.5% 0.6%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.48px 1.48px at 62.2% 20.1%, rgba(255, 255, 255, 0.7), transparent 60%),
-        radial-gradient(1.22px 1.22px at 37.6% 32.8%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.12px 1.12px at 57.6% 69.3%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(1.24px 1.24px at 26.8% 69.9%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(1.03px 1.03px at 7.4% 70.3%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.82px 1.82px at 73.0% 47.5%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.57px 1.57px at 66.8% 29.9%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.68px 1.68px at 91.2% 75.2%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(1.63px 1.63px at 61.0% 72.4%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.82px 1.82px at 21.4% 93.1%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(0.97px 0.97px at 60.6% 2.5%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(2.23px 2.23px at 70.0% 90.4%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.97px 1.97px at 98.5% 61.1%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.54px 1.54px at 25.6% 48.6%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.23px 1.23px at 34.2% 44.3%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.38px 1.38px at 80.4% 35.8%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.3px 1.3px at 69.8% 44.7%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.4px 1.4px at 23.7% 46.3%, rgba(255, 255, 255, 1.0), transparent 60%),
-        radial-gradient(1.64px 1.64px at 24.0% 59.3%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(2.06px 2.06px at 18.2% 88.6%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.74px 1.74px at 17.9% 93.8%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.6px 1.6px at 90.7% 26.1%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(2.21px 2.21px at 18.6% 25.5%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(2.13px 2.13px at 51.5% 13.4%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.05px 1.05px at 75.7% 25.5%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.5px 1.5px at 39.3% 37.6%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(0.97px 0.97px at 47.1% 64.8%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.26px 1.26px at 48.7% 81.8%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.89px 1.89px at 20.6% 69.9%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(1.37px 1.37px at 47.9% 95.0%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(2.23px 2.23px at 33.1% 4.3%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(1.13px 1.13px at 18.5% 62.9%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.82px 1.82px at 41.4% 5.9%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(1.78px 1.78px at 89.4% 92.8%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(0.98px 0.98px at 77.5% 3.9%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.87px 1.87px at 7.2% 87.4%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.25px 1.25px at 65.7% 22.4%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.31px 1.31px at 79.1% 62.5%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(2.16px 2.16px at 41.0% 62.8%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.13px 1.13px at 46.0% 59.1%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(0.83px 0.83px at 83.3% 48.5%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.73px 1.73px at 15.5% 3.3%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(1.54px 1.54px at 11.2% 44.4%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.91px 1.91px at 62.9% 25.1%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(2.02px 2.02px at 52.4% 23.1%, rgba(255, 255, 255, 0.7), transparent 60%),
-        radial-gradient(0.94px 0.94px at 31.3% 10.2%, rgba(255, 255, 255, 0.7), transparent 60%),
-        radial-gradient(0.98px 0.98px at 52.3% 7.2%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.85px 1.85px at 68.0% 20.2%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(2.39px 2.39px at 92.4% 81.0%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(1.25px 1.25px at 88.5% 32.1%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(0.94px 0.94px at 2.3% 72.3%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.2px 1.2px at 5.9% 42.7%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(1.29px 1.29px at 29.8% 35.6%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.23px 1.23px at 64.4% 30.3%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.15px 1.15px at 35.3% 79.3%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.25px 1.25px at 33.1% 57.0%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(2.23px 2.23px at 35.7% 96.1%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.87px 1.87px at 43.3% 17.4%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(0.96px 0.96px at 25.8% 62.6%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.79px 1.79px at 28.9% 79.7%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.57px 1.57px at 43.8% 55.2%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.42px 1.42px at 83.1% 79.7%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(2.03px 2.03px at 92.6% 2.1%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(1.8px 1.8px at 19.0% 35.0%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(2.27px 2.27px at 51.8% 51.3%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.69px 1.69px at 27.0% 63.3%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(2.38px 2.38px at 72.4% 0.9%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.01px 1.01px at 6.1% 71.1%, rgba(255, 255, 255, 1.0), transparent 60%),
-        radial-gradient(1.21px 1.21px at 45.2% 74.6%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.23px 1.23px at 2.9% 79.9%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(0.87px 0.87px at 44.1% 50.2%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(1.92px 1.92px at 38.1% 54.4%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(2.39px 2.39px at 82.2% 35.9%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(0.93px 0.93px at 44.8% 35.9%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(1.05px 1.05px at 59.1% 75.7%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.43px 1.43px at 28.5% 27.2%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(2.38px 2.38px at 45.7% 69.8%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(2.35px 2.35px at 79.9% 95.2%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(0.83px 0.83px at 83.8% 69.7%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(1.34px 1.34px at 89.7% 89.6%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.82px 1.82px at 82.8% 44.5%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(1.19px 1.19px at 92.1% 52.4%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.33px 1.33px at 58.7% 37.6%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(0.93px 0.93px at 31.9% 48.8%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(1.32px 1.32px at 11.4% 48.2%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(1.14px 1.14px at 3.0% 99.0%, rgba(255, 255, 255, 0.7), transparent 60%),
-        radial-gradient(1.71px 1.71px at 58.4% 3.9%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(2.14px 2.14px at 5.8% 47.4%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.91px 1.91px at 13.2% 5.8%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(2.37px 2.37px at 42.7% 34.8%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.52px 1.52px at 80.0% 80.8%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.99px 1.99px at 32.7% 90.2%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(2.19px 2.19px at 84.0% 67.5%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(1.5px 1.5px at 37.5% 94.5%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.47px 1.47px at 80.8% 35.2%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.78px 1.78px at 8.8% 84.1%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(1.49px 1.49px at 9.4% 29.4%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.97px 1.97px at 80.1% 74.0%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.99px 1.99px at 8.7% 35.1%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(1.32px 1.32px at 24.2% 1.7%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(1.67px 1.67px at 47.9% 17.7%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.46px 1.46px at 78.9% 83.5%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.82px 1.82px at 66.4% 55.9%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.16px 1.16px at 13.9% 89.9%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(1.79px 1.79px at 38.3% 55.0%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(1.42px 1.42px at 99.1% 84.8%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(1.37px 1.37px at 88.7% 94.0%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.51px 1.51px at 53.5% 46.3%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.89px 1.89px at 1.4% 56.6%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(2.27px 2.27px at 0.2% 56.8%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.15px 1.15px at 51.6% 37.6%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(1.79px 1.79px at 95.9% 15.1%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(1.21px 1.21px at 9.1% 24.3%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(1.29px 1.29px at 9.4% 82.8%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.53px 1.53px at 48.8% 51.6%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(2.1px 2.1px at 7.2% 12.5%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.16px 1.16px at 96.1% 69.1%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.46px 1.46px at 66.4% 27.9%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(2.23px 2.23px at 20.7% 3.0%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(1.11px 1.11px at 60.7% 97.2%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.59px 1.59px at 33.6% 28.0%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(1.14px 1.14px at 80.7% 99.8%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(1.46px 1.46px at 37.5% 70.5%, rgba(255, 255, 255, 0.96), transparent 60%),
-        radial-gradient(0.99px 0.99px at 94.8% 26.3%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.11px 1.11px at 6.2% 41.4%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(1.75px 1.75px at 40.4% 83.4%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.98px 1.98px at 66.6% 78.5%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.17px 1.17px at 38.9% 17.5%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(0.88px 0.88px at 11.6% 76.3%, rgba(255, 255, 255, 0.7), transparent 60%),
-        radial-gradient(2.06px 2.06px at 73.4% 72.8%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(1.17px 1.17px at 68.4% 73.6%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(2.04px 2.04px at 6.1% 30.5%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(2.33px 2.33px at 83.4% 65.1%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(0.87px 0.87px at 97.2% 77.8%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.73px 1.73px at 11.5% 33.2%, rgba(255, 255, 255, 0.99), transparent 60%),
-        radial-gradient(1.73px 1.73px at 85.8% 31.5%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.6px 1.6px at 1.9% 28.2%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(2.37px 2.37px at 71.7% 30.2%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(1.16px 1.16px at 29.8% 13.3%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(1.77px 1.77px at 48.0% 43.5%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.5px 1.5px at 1.0% 12.9%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.41px 1.41px at 74.6% 75.2%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(2.14px 2.14px at 29.4% 51.0%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.72px 1.72px at 2.0% 72.4%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.28px 1.28px at 5.6% 0.1%, rgba(255, 255, 255, 0.99), transparent 60%),
-        radial-gradient(1.14px 1.14px at 34.5% 55.4%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(0.93px 0.93px at 76.3% 31.7%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.05px 1.05px at 7.3% 3.1%, rgba(255, 255, 255, 0.8), transparent 60%),
-        radial-gradient(1.9px 1.9px at 16.4% 96.3%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(0.84px 0.84px at 68.3% 31.8%, rgba(255, 255, 255, 0.7), transparent 60%),
-        radial-gradient(1.64px 1.64px at 14.2% 36.7%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(1.76px 1.76px at 93.0% 83.9%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.8px 1.8px at 95.8% 94.1%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.66px 1.66px at 83.8% 86.7%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.34px 1.34px at 96.5% 29.1%, rgba(255, 255, 255, 1.0), transparent 60%),
-        radial-gradient(1.41px 1.41px at 51.3% 59.6%, rgba(255, 255, 255, 0.7), transparent 60%),
-        radial-gradient(1.5px 1.5px at 57.8% 79.7%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(2.18px 2.18px at 8.4% 5.0%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(0.84px 0.84px at 79.9% 82.5%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(1.09px 1.09px at 16.1% 28.8%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(2.09px 2.09px at 32.5% 8.6%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(1.66px 1.66px at 54.7% 88.6%, rgba(255, 255, 255, 0.75), transparent 60%),
-        radial-gradient(1.41px 1.41px at 80.8% 54.5%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(2.36px 2.36px at 83.6% 27.6%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.92px 1.92px at 27.6% 63.1%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(2.11px 2.11px at 29.8% 10.8%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(1.35px 1.35px at 11.0% 30.1%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(1.7px 1.7px at 98.9% 84.2%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.35px 1.35px at 3.4% 54.4%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(2.01px 2.01px at 15.7% 28.8%, rgba(255, 255, 255, 1.0), transparent 60%),
-        radial-gradient(1.9px 1.9px at 53.5% 32.7%, rgba(255, 255, 255, 0.99), transparent 60%),
-        radial-gradient(1.01px 1.01px at 2.9% 19.8%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(2.11px 2.11px at 83.9% 33.5%, rgba(255, 255, 255, 0.7), transparent 60%),
-        radial-gradient(2.14px 2.14px at 8.9% 21.5%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(2.2px 2.2px at 6.1% 70.1%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.11px 1.11px at 48.4% 88.3%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(2.02px 2.02px at 83.3% 25.4%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(1.63px 1.63px at 20.4% 44.0%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(2.14px 2.14px at 8.1% 8.5%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.9px 1.9px at 34.6% 76.6%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(2.15px 2.15px at 25.1% 45.8%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.97px 1.97px at 26.8% 33.2%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.18px 1.18px at 31.0% 43.0%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(2.22px 2.22px at 53.9% 76.4%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(0.96px 0.96px at 92.6% 51.3%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.86px 1.86px at 5.0% 10.5%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.98px 1.98px at 80.2% 26.2%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.86px 1.86px at 1.9% 73.1%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(2.09px 2.09px at 41.8% 13.5%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.41px 1.41px at 21.6% 78.8%, rgba(255, 255, 255, 0.89), transparent 60%),
-        radial-gradient(1.78px 1.78px at 52.2% 49.5%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.66px 1.66px at 7.7% 50.3%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(1.33px 1.33px at 0.3% 97.6%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(2.2px 2.2px at 9.8% 44.2%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(1.89px 1.89px at 49.5% 74.5%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(1.59px 1.59px at 89.1% 36.4%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(0.93px 0.93px at 74.7% 82.7%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(1.75px 1.75px at 77.0% 62.5%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(0.81px 0.81px at 35.6% 22.8%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(1.65px 1.65px at 7.1% 99.7%, rgba(255, 255, 255, 0.98), transparent 60%),
-        radial-gradient(1.97px 1.97px at 46.4% 66.8%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(0.93px 0.93px at 60.4% 9.1%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.02px 1.02px at 88.3% 76.4%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.33px 1.33px at 36.3% 22.5%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(1.12px 1.12px at 78.0% 95.7%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(2.16px 2.16px at 19.9% 97.3%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(0.88px 0.88px at 74.4% 33.0%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(2.37px 2.37px at 2.0% 90.7%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.94px 1.94px at 19.9% 9.2%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.29px 1.29px at 70.0% 48.3%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.55px 1.55px at 35.1% 15.5%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.31px 1.31px at 68.0% 69.4%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(1.95px 1.95px at 74.9% 92.2%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(1.59px 1.59px at 2.0% 45.5%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.47px 1.47px at 54.4% 45.9%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(1.36px 1.36px at 31.8% 79.2%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(0.97px 0.97px at 94.8% 72.4%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.98px 1.98px at 85.6% 4.3%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(0.82px 0.82px at 35.7% 27.7%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.09px 1.09px at 36.2% 76.3%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(1.21px 1.21px at 28.3% 56.5%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(1.29px 1.29px at 63.5% 16.5%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(1.19px 1.19px at 38.9% 39.0%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(2.1px 2.1px at 74.5% 49.9%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(0.84px 0.84px at 99.2% 8.3%, rgba(255, 255, 255, 0.99), transparent 60%),
-        radial-gradient(1.44px 1.44px at 33.8% 50.6%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.59px 1.59px at 93.6% 93.7%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.77px 1.77px at 39.0% 75.4%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(1.86px 1.86px at 8.5% 86.6%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(0.93px 0.93px at 74.0% 57.8%, rgba(255, 255, 255, 0.74), transparent 60%),
-        radial-gradient(1.22px 1.22px at 6.3% 67.1%, rgba(255, 255, 255, 0.94), transparent 60%),
-        radial-gradient(1.39px 1.39px at 94.0% 52.5%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.33px 1.33px at 37.8% 59.0%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.82px 1.82px at 43.7% 19.4%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.96px 1.96px at 7.6% 66.5%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.26px 1.26px at 62.4% 68.3%, rgba(255, 255, 255, 0.93), transparent 60%),
-        radial-gradient(1.31px 1.31px at 4.9% 20.4%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.73px 1.73px at 85.9% 37.6%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.6px 1.6px at 75.8% 56.0%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.02px 1.02px at 45.7% 56.7%, rgba(255, 255, 255, 0.91), transparent 60%),
-        radial-gradient(1.47px 1.47px at 6.0% 25.0%, rgba(255, 255, 255, 0.73), transparent 60%),
-        radial-gradient(1.9px 1.9px at 27.6% 39.8%, rgba(255, 255, 255, 0.81), transparent 60%),
-        radial-gradient(2.0px 2.0px at 81.0% 58.8%, rgba(255, 255, 255, 0.85), transparent 60%),
-        radial-gradient(2.23px 2.23px at 35.5% 79.1%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.59px 1.59px at 4.7% 93.2%, rgba(255, 255, 255, 0.87), transparent 60%),
-        radial-gradient(1.64px 1.64px at 45.4% 42.7%, rgba(255, 255, 255, 0.9), transparent 60%),
-        radial-gradient(2.23px 2.23px at 65.3% 66.8%, rgba(255, 255, 255, 0.86), transparent 60%),
-        radial-gradient(0.98px 0.98px at 87.4% 12.7%, rgba(255, 255, 255, 0.72), transparent 60%),
-        radial-gradient(1.07px 1.07px at 56.2% 38.2%, rgba(255, 255, 255, 1.0), transparent 60%),
-        radial-gradient(1.07px 1.07px at 71.6% 64.5%, rgba(255, 255, 255, 0.71), transparent 60%),
-        radial-gradient(1.09px 1.09px at 9.8% 78.1%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.35px 1.35px at 73.5% 44.0%, rgba(255, 255, 255, 0.92), transparent 60%),
-        radial-gradient(0.99px 0.99px at 36.9% 94.2%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(0.82px 0.82px at 42.3% 30.1%, rgba(255, 255, 255, 0.76), transparent 60%),
-        radial-gradient(1.2px 1.2px at 45.0% 69.7%, rgba(255, 255, 255, 0.82), transparent 60%),
-        radial-gradient(1.47px 1.47px at 52.7% 37.7%, rgba(255, 255, 255, 0.78), transparent 60%),
-        radial-gradient(1.94px 1.94px at 44.2% 0.8%, rgba(255, 255, 255, 0.88), transparent 60%),
-        radial-gradient(1.87px 1.87px at 68.8% 60.1%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.88px 1.88px at 63.2% 41.5%, rgba(255, 255, 255, 0.77), transparent 60%),
-        radial-gradient(1.45px 1.45px at 68.1% 74.6%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(2.35px 2.35px at 70.7% 76.7%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(1.56px 1.56px at 6.8% 40.6%, rgba(255, 255, 255, 0.95), transparent 60%),
-        radial-gradient(1.74px 1.74px at 10.5% 28.7%, rgba(255, 255, 255, 0.83), transparent 60%),
-        radial-gradient(1.68px 1.68px at 59.3% 55.3%, rgba(255, 255, 255, 0.84), transparent 60%),
-        radial-gradient(1.55px 1.55px at 77.3% 88.0%, rgba(255, 255, 255, 0.79), transparent 60%),
-        radial-gradient(1.35px 1.35px at 94.8% 39.7%, rgba(255, 255, 255, 0.97), transparent 60%),
-        radial-gradient(1.77px 1.77px at 19.3% 30.1%, rgba(255, 255, 255, 0.95), transparent 60%);
-      opacity: 1.0;
-      mix-blend-mode: screen;
-    }
+    radial-gradient(1.5px 1.5px at 8% 45%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.9px 1.9px at 27% 46%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 45% 42%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.6px 1.6px at 63% 48%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.3px 1.3px at 82% 44%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.8px 1.8px at 96% 40%, rgba(255, 255, 255, 1.0), transparent 60%),
 
+    radial-gradient(1.4px 1.4px at 12% 60%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.7px 1.7px at 30% 63%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.3px 1.3px at 48% 58%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.9px 1.9px at 67% 62%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 83% 59%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.6px 1.6px at 94% 55%, rgba(255, 255, 255, 1.0), transparent 60%),
+
+    radial-gradient(1.5px 1.5px at 6% 75%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.8px 1.8px at 22% 78%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.3px 1.3px at 38% 72%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.7px 1.7px at 56% 80%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 72% 75%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.9px 1.9px at 88% 78%, rgba(255, 255, 255, 1.0), transparent 60%),
+
+    radial-gradient(1.6px 1.6px at 12% 90%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 30% 92%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.8px 1.8px at 48% 88%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.5px 1.5px at 66% 93%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.7px 1.7px at 82% 88%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.6px 1.6px at 95% 85%, rgba(255, 255, 255, 1.0), transparent 60%);
+   opacity: 1.0;
+   filter: brightness(3.0) drop-shadow(0 0 4px white);
+   mix-blend-mode: screen;
+}
     /* 🌲 숲 테마: 위에서 비치는 햇살 + 연두/에메랄드 느낌 */
     body.theme-forest::before {
       content: "";
@@ -1738,6 +1348,79 @@
       opacity: 0.9;
       mix-blend-mode: soft-light;
     }
+
+/* 🔤 우주/네온 테마에서도 칸 편집 영역 글씨는 항상 진한 색으로 */
+body.theme-space .cell-edit-card,
+body.theme-space .cell-edit-card * {
+  color: #111827;
+}
+
+body.theme-neon .cell-edit-card,
+body.theme-neon .cell-edit-card * {
+  color: #111827;
+}
+
+/* ✅ 단, 활성화된 버튼은 흰 글씨 유지 (파란 그라데이션 버튼) */
+body.theme-space .cell-edit-btn.active,
+body.theme-neon .cell-edit-btn.active {
+  color: #f9fafb;
+}
+/* === 배경 절단 현상 수정용 – 숲/사막 배경 다시 정의 === */
+
+/* 숲 테마: 위는 짙은 숲, 아래로 갈수록 밝은 초록으로 부드럽게 */
+body.theme-forest {
+  background: linear-gradient(
+    to bottom,
+    #14532d 0%,   /* 가장 위 – 진한 숲 초록 */
+    #166534 30%,  /* 중간 위쪽 */
+    #22c55e 60%,  /* 중간 – 선명한 초록 */
+    #bbf7d0 100%  /* 맨 아래 – 밝은 연두 */
+  );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* (옵션) 사막 테마도 혹시 비슷하게 느껴지면 같이 부드럽게 */
+body.theme-desert {
+  background: linear-gradient(
+    to bottom,
+    #a16207 0%,   /* 위 – 짙은 모래/바위색 */
+    #f97316 35%,  /* 중간 – 주황빛 모래 */
+    #fdba74 70%,  /* 아래 – 밝은 모래색 */
+    #fef3c7 100%  /* 맨 아래 – 아주 연한 모래색 */
+  );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* 🌌 우주 테마: 기존 별 위에 큰 별 몇 개 추가 레이어 */
+body.theme-space::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;              /* 게임 화면 뒤쪽에만 보이게 */
+  opacity: 0.95;
+  mix-blend-mode: screen;
+  filter: brightness(1.6) drop-shadow(0 0 4px white);
+
+  /* 7px / 6px / 5px 정도 크기의 별들을 1/3씩 배치 */
+  background-image:
+    radial-gradient(7px 7px at 12% 12%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(6px 6px at 32% 20%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(5px 5px at 55% 18%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(7px 7px at 78% 22%, rgba(226, 232, 240, 1.0), transparent 60%),
+
+    radial-gradient(6px 6px at 18% 45%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(5px 5px at 45% 40%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(7px 7px at 70% 48%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(6px 6px at 90% 42%, rgba(255, 255, 255, 1.0), transparent 60%),
+
+    radial-gradient(5px 5px at 22% 72%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(7px 7px at 52% 78%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(6px 6px at 78% 74%, rgba(226, 232, 240, 1.0), transparent 60%);
+}
+
 </style>
 </head>
 <body class="theme-default">
@@ -1765,6 +1448,10 @@
               <option value="6">6명</option>
             </select>
           </label>
+           <label>
+            전체 칸수:
+            <input type="number" id="boardSizeInput" min="6" max="200" value="30" />
+          </label>
           <label>
             테마:
             <select id="themeSelect">
@@ -1775,10 +1462,92 @@
               <option value="neon">네온</option>
             </select>
           </label>
-          <label>
-            전체 칸수:
-            <input type="number" id="boardSizeInput" min="6" max="200" value="30" />
-          </label>
+
+          <button id="startBtn">게임 시작 / 리셋</button>
+        </div>
+      </div>
+
+      <div class="dice-box">
+<div class="dice-row">
+  <button id="rollBtn">🎲 주사위 굴리기</button>
+  <button id="skipBtn">⏭️ 턴 스킵</button>
+  <div class="dice-visual" id="diceVisual">-</div>
+  <div class="cheat-badge">
+    <span id="cheatText">치트: 없음</span>
+  </div>
+
+  <!-- 🔽 치트 커맨드 입력창을 여기로 이동 -->
+  <label class="cheat-input">
+    커맨드:
+    <input type="text" id="secretCodeInput" placeholder="치트 코드" />
+  </label>
+</div>
+
+        <div class="dice-value" id="diceInfo">
+          게임을 시작한 뒤 주사위를 굴려 보세요.
+        </div>
+      </div>
+    </div>
+
+    <div class="board" id="board"></div>
+
+     <!-- 🔽 칸 편집 모드 카드 (접기/펼치기 가능 버전) -->
+    <div class="cell-edit-card" id="cellEditCard">
+      <div class="cell-edit-header">
+        <div class="cell-edit-title">
+          <span class="cell-edit-title-icon">🛠</span>
+          <span>칸 편집 모드</span>
+        </div>
+
+        <!-- 접기 / 펼치기 버튼 -->
+        <button type="button"
+                class="cell-edit-toggle"
+                id="cellEditToggleBtn">
+          칸 편집 접기 ▲
+        </button>
+
+        <div class="cell-edit-sub">
+          버튼을 고른 뒤, 위 보드 칸을 클릭해서 특수 칸으로 설정하세요.
+        </div>
+      </div>
+
+      <!-- 이 안쪽 부분 전체가 접혔다/펼쳐짐 -->
+      <div class="cell-edit-body" id="cellEditBody">
+        <div class="cell-edit-panel">
+          <button type="button" class="cell-edit-btn active" data-mode="off">
+            <span class="cell-edit-btn-icon">🚫</span>
+            <span>편집 끔</span>
+          </button>
+          <button type="button" class="cell-edit-btn" data-mode="x2">
+            <span class="cell-edit-btn-icon">🚀</span>
+            <span>x2</span>
+          </button>
+          <button type="button" class="cell-edit-btn" data-mode="half">
+            <span class="cell-edit-btn-icon">🐢</span>
+            <span>1/2</span>
+          </button>
+          <button type="button" class="cell-edit-btn" data-mode="trap">
+            <span class="cell-edit-btn-icon">💣</span>
+            <span>함정</span>
+          </button>
+          <button type="button" class="cell-edit-btn" data-mode="gkey">
+            <span class="cell-edit-btn-icon">✨</span>
+            <span>황금열쇠</span>
+          </button>
+          <button type="button" class="cell-edit-btn" data-mode="clear">
+            <span class="cell-edit-btn-icon">⛔</span>
+            <span>지우기</span>
+          </button>
+        </div>
+
+        <div class="cell-edit-hint">
+          • 출발(0), 도착 칸은 편집할 수 없습니다. <br />
+          • 같은 칸에 x2/1/2/함정/황금열쇠를 겹쳐서 설정하지 않도록 주의하세요. <br />
+          • 아래 입력칸에서 숫자로도 직접 특수 칸을 설정할 수 있습니다.
+        </div>
+
+        <!-- 🔧 x2 / 1/2 / 함정 / 황금열쇠 칸 범위 설정 입력 -->
+        <div class="cell-range-edit">
           <label>
             x2 칸:
             <input type="text" id="x2CellsInput" placeholder="예: 2,5,9 또는 2~4" />
@@ -1795,98 +1564,11 @@
             황금열쇠 칸:
             <input type="text" id="gKeyCellsInput" placeholder="예: 2,7 또는 10~12" />
           </label>
-          <label>
-            커맨드:
-            <input type="text" id="secretCodeInput" placeholder="치트 코드" />
-          </label>
-          <button id="startBtn">게임 시작 / 리셋</button>
-        </div>
-      </div>
-
-      <div class="dice-box">
-        <div class="dice-row">
-          <button id="rollBtn">🎲 주사위 굴리기</button>
-          <button id="skipBtn">⏭️ 턴 스킵</button>
-          <div class="dice-visual" id="diceVisual">-</div>
-          <div class="cheat-badge">
-            <span id="cheatText">치트: 없음</span>
-          </div>
-        </div>
-        <div class="dice-value" id="diceInfo">
-          게임을 시작한 뒤 주사위를 굴려 보세요.
         </div>
       </div>
     </div>
+    <!-- 🔼 칸 편집 모드 카드 끝 -->
 
-    <div class="board" id="board"></div>
-
-                <div class="cell-edit-card">
-          <div class="cell-edit-header">
-            <div class="cell-edit-title">
-              <span class="cell-edit-title-icon">🛠</span>
-              <span>칸 편집 모드</span>
-            </div>
-            <div class="cell-edit-sub">
-              버튼을 고른 뒤, 위 보드 칸을 클릭해서 특수 칸으로 설정하세요.
-            </div>
-          </div>
-
-          <div class="cell-edit-panel">
-            <button type="button" class="cell-edit-btn active" data-mode="off">
-              <span class="cell-edit-btn-icon">🚫</span>
-              <span>편집 끔</span>
-            </button>
-            <button type="button" class="cell-edit-btn" data-mode="x2">
-              <span class="cell-edit-btn-icon">🚀</span>
-              <span>x2</span>
-            </button>
-            <button type="button" class="cell-edit-btn" data-mode="half">
-              <span class="cell-edit-btn-icon">🐢</span>
-              <span>1/2</span>
-            </button>
-            <button type="button" class="cell-edit-btn" data-mode="trap">
-              <span class="cell-edit-btn-icon">💣</span>
-              <span>함정</span>
-            </button>
-            <button type="button" class="cell-edit-btn" data-mode="gkey">
-              <span class="cell-edit-btn-icon">✨</span>
-              <span>황금열쇠</span>
-            </button>
-            <button type="button" class="cell-edit-btn" data-mode="clear">
-              <span class="cell-edit-btn-icon">⛔</span>
-              <span>지우기</span>
-            </button>
-          </div>
-
-          <div class="cell-edit-hint">
-            • 출발(0), 도착 칸은 편집할 수 없습니다. <br />
-            • 같은 칸에 x2/1/2/함정/황금열쇠를 겹쳐서 설정하지 않도록 주의하세요.
-          </div>
-        </div>
-
-
-
-    <div class="legend">
-      <div class="legend-item">
-        <div class="legend-color boost"></div> x2 배속 칸:
-        <span id="boostRangeText">없음</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color slow"></div> 1/2 배속 칸:
-        <span id="slowRangeText">없음</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color reset"></div> 출발로 되돌아가는 칸:
-        <span id="resetRangeText">없음</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color gkey"></div> 황금열쇠 칸:
-        <span id="gKeyRangeText">없음</span>
-      </div>
-      <div class="legend-item">
-        ⚑ 0칸: 출발, 마지막 칸: 도착
-      </div>
-    </div>
 
     <div class="players-legend" id="playersLegend"></div>
 
@@ -1984,6 +1666,9 @@
     const cheatPopupIconEl = document.getElementById("cheatPopupIcon");
     const themeSelect = document.getElementById("themeSelect");
     const cellEditButtons = document.querySelectorAll(".cell-edit-btn");
+    const cellEditCardEl = document.getElementById("cellEditCard");
+    const cellEditBodyEl = document.getElementById("cellEditBody");
+    const cellEditToggleBtn = document.getElementById("cellEditToggleBtn");
 
     const THEME_CLASS_LIST = [
       "theme-default",
@@ -3231,6 +2916,18 @@
           cellEditMode = btn.dataset.mode || "off";
           playSound("click");
         });
+      });
+    }
+  // 🔽 칸 편집 모드 접기 / 펼치기
+    if (cellEditToggleBtn && cellEditCardEl && cellEditBodyEl) {
+      cellEditToggleBtn.addEventListener("click", () => {
+        const collapsed = cellEditCardEl.classList.toggle("collapsed");
+        if (collapsed) {
+          cellEditToggleBtn.textContent = "칸 편집 열기 ▼";
+        } else {
+          cellEditToggleBtn.textContent = "칸 편집 접기 ▲";
+        }
+        playSound("click");
       });
     }
 
