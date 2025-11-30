@@ -4,17 +4,65 @@
   <meta charset="UTF-8" />
   <title>주사위 보드게임</title>
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 20px;
-      background: #f5f5f7;
-    }
+/* 🎯 주사위 옆 치트 커맨드 입력 */
+.cheat-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-left: 6px; /* 치트 배지랑 살짝 띄우기 */
+}
+
+.cheat-input input {
+  width: 90px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid #d4d4d8;
+  font-size: 12px;
+  background: #f9fafb;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin: 0;          /* 🔹 바깥 여백 제거 */
+  padding: 20px;      /* 🔹 대신 안쪽 여백으로 변경 */
+  background: #f5f5f7;
+}
 
     h1 {
       text-align: center;
       margin-bottom: 4px;
     }
+/* 우주/네온 테마에서
+   - 설정줄(.config)은 항상 검은색
+   - 상태줄(.status)은 기본 글씨만 밝게, 플레이어 이름은 말 색 그대로 사용 */
+body.theme-space .config,
+body.theme-space .config *,
+body.theme-neon .config,
+body.theme-neon .config * {
+  color: #111827 !important;   /* 설정창만 강제로 검정 */
+}
 
+/* 우주/네온 테마에서 상태줄은 항상 진한 글씨색 사용
+   (플레이어 이름은 JS가 inline style로 색을 주기 때문에 그대로 유지됨) */
+body.theme-space .status,
+body.theme-space .status span,
+body.theme-neon .status,
+body.theme-neon .status span {
+  color: #111827;
+}
+
+
+
+
+
+/* 우주/네온 테마에서 상단 설정 줄(.config) 안 글씨는 항상 검은색 */
+body.theme-space .config,
+body.theme-space .config *,
+body.theme-neon .config,
+body.theme-neon .config * {
+  color: #111827 !important; /* 진한 검정에 가까운 색 */
+}
     .game-container {
       max-width: 900px;
       margin: 0 auto;
@@ -27,17 +75,17 @@
       overflow: hidden;
     }
 
-    .top-panel {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      position: relative;
-      padding-bottom: 12px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
-    }
+.top-panel {
+  display: flex;
+  flex-direction: column;   /* 위: 상태창, 아래: 주사위 박스가 세로로 쌓이도록 */
+  align-items: center;      /* 두 박스를 가로 가운데 정렬 */
+  gap: 12px;
+  margin-bottom: 16px;
+  position: relative;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+}
+
 
     .top-panel::after {
       content: "";
@@ -84,7 +132,8 @@
 
     .config select,
     .config input[type="number"],
-    .config input[type="text"] {
+    .config input[type="text"],
+    .cell-range-edit input[type="text"] {
       padding: 2px 6px;
       border-radius: 999px;
       border: 1px solid #d4d4d8;
@@ -93,8 +142,24 @@
       width: 70px;
     }
 
-    .config input[type="text"] {
+    .config input[type="text"],
+    .cell-range-edit input[type="text"] {
       width: 140px;
+    }
+
+    /* 🔧 칸 편집 모드 아래에 들어가는 범위 입력창 스타일 */
+    .cell-range-edit {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .cell-range-edit label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .config label {
@@ -180,58 +245,76 @@
     }
 
     .dice-visual {
-      width: 48px;
-      height: 48px;
+      width: 64px;
+      height: 64px;
       border-radius: 12px;
       border: 2px solid #e5e7eb;
       background: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 26px;
+      font-size: 32px;
       font-weight: 700;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
       transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    /* 🎲 굴리는 중일 때 – 회전 + 네온 */
+    
+    /* 🎲 굴리는 중일 때 – 굴러가는 모션 (살짝만) */
     .dice-visual.rolling {
-      animation: dice-spin 0.9s ease-out;
+      /* 살짝 오른쪽으로 굴러가면서 1바퀴만 회전 */
+      animation: dice-roll 0.7s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
 
-    @keyframes dice-spin {
+    @keyframes dice-roll {
       0% {
-        transform: translateY(0px) scale(1.0) rotateZ(0deg);
+        transform: translateX(0px) translateY(0px) rotateZ(0deg);
       }
-      30% {
-        transform: translateY(-4px) scale(1.25) rotateZ(360deg);
+      20% {
+        transform: translateX(6px) translateY(-3px) rotateZ(180deg);
       }
-      70% {
-        transform: translateY(-2px) scale(1.1) rotateZ(720deg);
+      50% {
+        transform: translateX(10px) translateY(-1px) rotateZ(360deg);
+      }
+      80% {
+        transform: translateX(4px) translateY(1px) rotateZ(540deg);
       }
       100% {
-        transform: translateY(0px) scale(1.0) rotateZ(1080deg);
+        transform: translateX(0px) translateY(0px) rotateZ(720deg);
       }
     }
 
-    /* ✅ 변경: 치트 전용에서는 애니메이션을 여기서 지정하지 않고,
-       rolling + cheat-active일 때만 두 개를 동시에 적용 */
+    /* 치트 주사위: 클래스 자체는 네온 스타일만 표시 (애니메이션은 rolling 때만 적용) */
     .dice-visual.cheat-active {
-      /* 네온 강조 상태만 표시 (애니메이션 없음) */
+      /* 여기서는 별도 transform 애니메이션을 걸지 않는다 */
     }
 
+    /* 치트 + 굴리는 중일 때: 동일한 굴림 + 박스 그림자만 살짝 반짝임 */
     .dice-visual.rolling.cheat-active {
-      animation: dice-spin 0.9s ease-out, cheat-pulse 1.1s ease-out;
+      animation:
+        dice-roll 0.7s cubic-bezier(0.25, 0.8, 0.25, 1),
+        cheat-glow 0.7s ease-out;
     }
 
-    @keyframes cheat-pulse {
-      0%   { transform: scale(1); }
-      30%  { transform: scale(1.3); }
-      60%  { transform: scale(1.15); }
-      100% { transform: scale(1); }
+    @keyframes cheat-glow {
+      0% {
+        box-shadow:
+          0 4px 10px rgba(0, 0, 0, 0.06),
+          0 0 0px rgba(250, 204, 21, 0.0);
+      }
+      40% {
+        box-shadow:
+          0 4px 12px rgba(0, 0, 0, 0.10),
+          0 0 14px rgba(250, 204, 21, 0.85);
+      }
+      100% {
+        box-shadow:
+          0 4px 10px rgba(0, 0, 0, 0.06),
+          0 0 0px rgba(250, 204, 21, 0.0);
+      }
     }
 
-    .dice-pip-grid {
+.dice-pip-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(3, 1fr);
@@ -257,6 +340,7 @@
       font-size: 12px;
       max-width: 260px;
       text-align: right;
+      display: none;
     }
 
     .cheat-badge {
@@ -297,6 +381,37 @@
       transition: box-shadow 0.2s ease, transform 0.2s ease;
       cursor: pointer;
     }
+/* ===== 특수 칸 아이콘 + 반짝 효과 ===== */
+.cell.zone-boost::after,
+.cell.zone-slow::after,
+.cell.zone-reset::after,
+.cell.zone-gkey::after {
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* 아이콘 모양 */
+.cell.zone-boost::after { content: "⚡"; }   /* x2 칸 */
+.cell.zone-slow::after  { content: "🐢"; }   /* 1/2 칸 */
+.cell.zone-reset::after { content: "☠"; }   /* 함정 칸 */
+.cell.zone-gkey::after  { content: "🔑"; }   /* 황금열쇠 칸 */
+
+/* 은은한 네온 테두리 */
+.cell.zone-boost {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+}
+.cell.zone-slow {
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+}
+.cell.zone-reset {
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.45);
+}
+.cell.zone-gkey {
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+}
 
     .cell:hover {
       transform: translateY(-2px);
@@ -691,12 +806,27 @@
       background: rgba(15, 23, 42, 0.9);
       border-color: #1f2937;
     }
-    body.theme-space .players-legend .player-pill {
-      background: rgba(15, 23, 42, 0.9);
-    }
+/* 우주 테마: 누구 차례인지 더 눈에 띄게 */
+body.theme-space .players-legend .player-pill {
+  background: transparent;          /* 기본은 배경 투명 */
+  border-color: transparent;
+  color: #e5e7eb;                   /* 글씨는 밝게 */
+}
+
+/* 우주 테마에서 현재 턴인 플레이어 pill */
+body.theme-space .players-legend .player-pill.current-turn {
+  background: #0b1120;              /* 진한 남색 캡슐 */
+  border-color: #facc15;            /* 황금색 테두리 */
+  box-shadow:
+    0 0 0 2px rgba(248, 250, 252, 0.9),
+    0 0 12px rgba(250, 204, 21, 0.85);  /* 살짝 빛나는 효과 */
+}
+
 
     body.theme-forest {
-      background: linear-gradient(135deg, #064e3b, #047857);
+      background:
+        linear-gradient(to top, #bbf7d0 0%, #86efac 35%, #22c55e 38%, #16a34a 41%, #14532d 43%),
+        linear-gradient(to top, #bbf7d0 0%, #bbf7d0 42%, #e0f2fe 80%, #bfdbfe 100%);
     }
     body.theme-forest .game-container {
       background: #ecfdf5;
@@ -801,9 +931,21 @@
       background: rgba(15, 23, 42, 0.95);
       border-color: #4c1d95;
     }
-    body.theme-neon .players-legend .player-pill {
-      background: rgba(30, 64, 175, 0.7);
-    }
+/* 네온 테마: 현재 턴 pill 강조 */
+body.theme-neon .players-legend .player-pill {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: transparent;
+  color: #e5e7eb;
+}
+
+body.theme-neon .players-legend .player-pill.current-turn {
+  background: #020617;
+  border-color: #22d3ee;              /* 시안색 테두리 */
+  box-shadow:
+    0 0 0 2px rgba(244, 244, 245, 0.9),
+    0 0 14px rgba(56, 189, 248, 0.9);
+}
+
 
     h1 {
       text-align: center;
@@ -831,7 +973,455 @@
       opacity: 0.7;
       z-index: -1;
     }
-  </style>
+  
+        /* 칸 편집 패널 (카드형 디자인) */
+    .cell-edit-card {
+      margin-top: 10px;
+      margin-bottom: 6px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f9fafb, #eef2ff);
+      border: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    /* 🔽 칸 편집 모드 접기/펼치기 버튼 */
+    .cell-edit-toggle {
+      margin-left: 8px;             /* 제목 오른쪽에 살짝만 띄우기 */
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid #d4d4d8;
+      background: #e5e7eb;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+
+    /* 접힌 상태에서는 내용(body)만 숨김 */
+    .cell-edit-card.collapsed .cell-edit-body {
+      display: none;
+    }
+
+
+
+    .cell-edit-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;  /* 제목 + 버튼을 왼쪽에 모으기 */
+      column-gap: 8px;              /* 가로 간격 */
+      row-gap: 4px;                 /* 세로 간격 */
+    }
+
+    .cell-edit-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 12px;
+      color: #111827;
+    }
+
+    .cell-edit-title-icon {
+      font-size: 14px;
+    }
+
+    .cell-edit-sub {
+      font-size: 11px;
+      color: #6b7280;
+      flex-basis: 100%;     /* 제목/버튼 아래 줄 전체를 차지하게 */
+      margin-left: 22px;    /* 아이콘/제목 밑으로 살짝 들여쓰기 */
+    }
+
+
+    .cell-edit-panel {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .cell-edit-btn {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #d4d4d8;
+      background: white;
+      cursor: pointer;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .cell-edit-btn:hover {
+      border-color: #4f46e5;
+    }
+
+    .cell-edit-btn.active {
+      background: linear-gradient(135deg, #4f46e5, #2563eb);
+      color: #f9fafb;
+      border-color: #4338ca;
+      box-shadow: 0 0 0 1px rgba(191, 219, 254, 0.7),
+        0 4px 8px rgba(37, 99, 235, 0.35);
+    }
+
+    .cell-edit-btn-icon {
+      font-size: 12px;
+    }
+
+    .cell-edit-hint {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    /* === 우주/네온 테마에서 일반 주사위를 더 밝게 보이도록 강제 === */
+    body.theme-space .dice-visual:not(.cheat-active),
+    body.theme-neon .dice-visual:not(.cheat-active) {
+      background: #ffffff !important;      /* 안쪽 완전 흰색 */
+      border-color: #e5e7eb;
+      color: #020617;
+      box-shadow:
+        0 0 0 2px rgba(15, 23, 42, 0.9),
+        0 0 20px rgba(255, 255, 255, 0.95); /* 사방으로 흰 빛 */
+    }
+
+    body.theme-space .dice-visual:not(.cheat-active) .dice-pip,
+    body.theme-neon .dice-visual:not(.cheat-active) .dice-pip {
+      background: #020617;  /* 눈은 짙은 색으로 또렷하게 */
+    }
+
+    /* 🌟 네온 테마 황금열쇠 칸 색을 더 연하게 조정 */
+    body.theme-neon .zone-gkey {
+      background: rgba(254, 252, 232, 0.96); /* 아주 옅은 파스텔 노랑 */
+      border-color: #fde68a;                 /* 연한 테두리 */
+      color: #1f2937;                        /* 진한 글자색으로 대비 */
+      box-shadow: 0 0 10px rgba(250, 204, 21, 0.45);
+    }
+
+    /* 🌟 네온 테마 황금열쇠 칸에 네온 느낌 추가 (연한 바탕 + 강한 외곽 글로우) */
+    body.theme-neon .zone-gkey {
+      background: rgba(254, 252, 232, 0.96); /* 연한 파스텔 노랑 유지 */
+      border-color: #facc15;                 /* 살짝 더 진한 골드 테두리 */
+      color: #1f2937;                        /* 글자는 진한 색으로 선명하게 */
+      box-shadow:
+        0 0 4px rgba(250, 204, 21, 0.7),
+        0 0 14px rgba(250, 204, 21, 0.9),
+        0 0 28px rgba(250, 249, 150, 0.9);   /* 바깥쪽으로 퍼지는 네온 광채 */
+    }
+
+    /* 🌟 네온 테마 황금열쇠 칸 네온 광채를 조금만 줄인 버전 */
+    body.theme-neon .zone-gkey {
+      background: rgba(254, 252, 232, 0.96); /* 연한 파스텔 노랑 유지 */
+      border-color: #facc15;                 /* 골드 테두리 유지 */
+      color: #1f2937;                        /* 진한 글자색 유지 */
+      box-shadow:
+        0 0 3px rgba(250, 204, 21, 0.55),
+        0 0 12px rgba(250, 249, 150, 0.65);  /* 기존보다 반경과 강도 모두 살짝 감소 */
+    }
+
+    /* 🌟 네온 테마 황금열쇠 칸: 테두리는 더 진하게, 안쪽은 살짝 더 연하게, 네온 광채는 조금만 강화 */
+    body.theme-neon .zone-gkey {
+      background: rgba(255, 253, 244, 0.97); /* 더 밝은 크림색 느낌 */
+      border-color: #eab308;                 /* 한 톤 더 진한 골드 테두리 */
+      color: #1f2937;                        /* 글자는 그대로 선명하게 */
+      box-shadow:
+        0 0 4px rgba(250, 204, 21, 0.6),
+        0 0 14px rgba(250, 249, 150, 0.72);  /* 직전보다 살짝만 더 강해진 네온 */
+    }
+
+    /* 💡 네온 테마: 이미지 없이 네온 격자 + 빛나는 중심부 표현 */
+    body.theme-neon::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background-image:
+        radial-gradient(circle at center,
+          rgba(52, 211, 153, 0.20),
+          transparent 55%),
+        radial-gradient(circle at top,
+          rgba(59, 130, 246, 0.20),
+          transparent 60%),
+        linear-gradient(rgba(56, 189, 248, 0.24) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(236, 72, 153, 0.24) 1px, transparent 1px);
+      background-size:
+        100% 100%,
+        100% 100%,
+        48px 48px,
+        48px 48px;
+      opacity: 0.55;
+      mix-blend-mode: screen;
+    }
+
+    /* 🌌 우주 테마: 별을 더 많고 밝게 (CSS만 사용, 기존보다 밀도/밝기 증가) */
+    body.theme-space::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background-image:
+        radial-gradient(2px 2px at 10% 15%, rgba(248, 250, 252, 1.0), transparent 55%),
+        radial-gradient(1.5px 1.5px at 25% 30%, rgba(226, 232, 240, 1.0), transparent 55%),
+        radial-gradient(2.2px 2.2px at 40% 20%, rgba(248, 250, 252, 1.0), transparent 55%),
+        radial-gradient(1.8px 1.8px at 65% 18%, rgba(226, 232, 240, 1.0), transparent 55%),
+        radial-gradient(1.6px 1.6px at 80% 28%, rgba(248, 250, 252, 1.0), transparent 55%),
+        radial-gradient(2px 2px at 20% 65%, rgba(226, 232, 240, 1.0), transparent 55%),
+        radial-gradient(1.5px 1.5px at 50% 75%, rgba(248, 250, 252, 1.0), transparent 55%),
+        radial-gradient(2px 2px at 72% 68%, rgba(226, 232, 240, 1.0), transparent 55%),
+        radial-gradient(1.4px 1.4px at 88% 82%, rgba(248, 250, 252, 1.0), transparent 55%),
+        radial-gradient(1.2px 1.2px at 15% 85%, rgba(226, 232, 240, 1.0), transparent 55%),
+        radial-gradient(2.4px 2.4px at 55% 10%, rgba(248, 250, 252, 1.0), transparent 55%);
+      opacity: 1.0;
+      mix-blend-mode: screen;
+    }
+
+    /* 💡 네온 테마: 격자 삭제, 좌우에서 비추는 네온 광원 느낌만 */
+    body.theme-neon::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background-image:
+        radial-gradient(circle at 0% 50%, rgba(236, 72, 153, 0.40), transparent 60%),
+        radial-gradient(circle at 100% 50%, rgba(56, 189, 248, 0.40), transparent 60%);
+      background-size: 100% 100%;
+      opacity: 0.75;
+      mix-blend-mode: screen;
+    }
+
+    /* 🌌 우주 테마: 별을 훨씬 더 밝고 또렷하게 (강한 화이트 포인트) */
+    body.theme-space::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background-image:
+        radial-gradient(2.4px 2.4px at 8% 12%,  rgba(255, 255, 255, 1.0), transparent 60%),
+        radial-gradient(2.2px 2.2px at 22% 26%, rgba(248, 250, 252, 0.98), transparent 60%),
+        radial-gradient(2.6px 2.6px at 38% 18%, rgba(255, 255, 255, 1.0), transparent 60%),
+        radial-gradient(2.4px 2.4px at 61% 16%, rgba(248, 250, 252, 0.98), transparent 60%),
+        radial-gradient(2.2px 2.2px at 78% 24%, rgba(255, 255, 255, 1.0), transparent 60%),
+        radial-gradient(2.4px 2.4px at 18% 60%, rgba(248, 250, 252, 0.98), transparent 60%),
+        radial-gradient(2.2px 2.2px at 46% 72%, rgba(255, 255, 255, 1.0), transparent 60%),
+        radial-gradient(2.4px 2.4px at 70% 66%, rgba(248, 250, 252, 0.98), transparent 60%),
+        radial-gradient(2.2px 2.2px at 88% 78%, rgba(255, 255, 255, 1.0), transparent 60%),
+        radial-gradient(2.0px 2.0px at 14% 82%, rgba(248, 250, 252, 0.95), transparent 60%),
+        radial-gradient(2.8px 2.8px at 52% 10%, rgba(255, 255, 255, 1.0), transparent 60%);
+      opacity: 1.0;              /* 완전한 밝기 */
+      mix-blend-mode: screen;    /* 어두운 배경 위에서 하얀 별이 잘 보이도록 */
+    }
+/* 🌌 우주 테마: 별 100개 정도 (가벼운 버전) */
+body.theme-space::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.95;
+  mix-blend-mode: screen;
+  background-image:
+    radial-gradient(1.8px 1.8px at 10% 10%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 25% 18%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.6px 1.6px at 40% 14%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.9px 1.9px at 60% 12%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.5px 1.5px at 78% 20%, rgba(226, 232, 240, 1.0), transparent 60%),
+
+    radial-gradient(1.4px 1.4px at 15% 30%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.8px 1.8px at 35% 32%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.3px 1.3px at 55% 28%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.7px 1.7px at 72% 35%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 90% 30%, rgba(255, 255, 255, 1.0), transparent 60%),
+
+    radial-gradient(1.5px 1.5px at 8% 45%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.9px 1.9px at 27% 46%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 45% 42%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.6px 1.6px at 63% 48%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.3px 1.3px at 82% 44%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.8px 1.8px at 96% 40%, rgba(255, 255, 255, 1.0), transparent 60%),
+
+    radial-gradient(1.4px 1.4px at 12% 60%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.7px 1.7px at 30% 63%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.3px 1.3px at 48% 58%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.9px 1.9px at 67% 62%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 83% 59%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.6px 1.6px at 94% 55%, rgba(255, 255, 255, 1.0), transparent 60%),
+
+    radial-gradient(1.5px 1.5px at 6% 75%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.8px 1.8px at 22% 78%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.3px 1.3px at 38% 72%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.7px 1.7px at 56% 80%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 72% 75%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.9px 1.9px at 88% 78%, rgba(255, 255, 255, 1.0), transparent 60%),
+
+    radial-gradient(1.6px 1.6px at 12% 90%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.4px 1.4px at 30% 92%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.8px 1.8px at 48% 88%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(1.5px 1.5px at 66% 93%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(1.7px 1.7px at 82% 88%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(1.6px 1.6px at 95% 85%, rgba(255, 255, 255, 1.0), transparent 60%);
+   opacity: 1.0;
+   filter: brightness(3.0) drop-shadow(0 0 4px white);
+   mix-blend-mode: screen;
+}
+    /* 🌲 숲 테마: 위에서 비치는 햇살 + 연두/에메랄드 느낌 */
+    body.theme-forest::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background-image:
+        radial-gradient(circle at top left,  rgba(190, 242, 100, 0.35), transparent 60%),
+        radial-gradient(circle at top right, rgba(45, 212, 191, 0.30), transparent 65%),
+        radial-gradient(circle at bottom,    rgba(34, 197, 94, 0.30), transparent 70%);
+      opacity: 0.9;
+      mix-blend-mode: soft-light;
+    }
+
+    /* 🏜 사막 테마: 모래 언덕 위로 떨어지는 햇빛 느낌 */
+    body.theme-desert::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background-image:
+        radial-gradient(circle at top,    rgba(253, 224, 171, 0.50), transparent 60%),
+        radial-gradient(circle at 20% 70%,rgba(251, 191, 36, 0.35),  transparent 65%),
+        radial-gradient(circle at 80% 80%,rgba(248, 250, 252, 0.30), transparent 70%);
+      opacity: 0.95;
+      mix-blend-mode: soft-light;
+    }
+
+    /* 🌲 숲 테마: 나무 줄기 + 윗부분 수관 느낌 (이미지 없이 CSS로 표현) */
+    body.theme-forest::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background-image:
+        /* 위쪽 수관(나뭇잎 덩어리) */
+        radial-gradient(circle at top, rgba(74, 222, 128, 0.45), transparent 60%),
+        radial-gradient(circle at 20% 10%, rgba(52, 211, 153, 0.45), transparent 55%),
+        radial-gradient(circle at 80% 12%, rgba(34, 197, 94, 0.45), transparent 55%),
+        /* 세로로 반복되는 나무 줄기들 */
+        repeating-linear-gradient(
+          90deg,
+          rgba(15, 23, 42, 0.0) 0px,
+          rgba(15, 23, 42, 0.0) 26px,
+          rgba(15, 23, 42, 0.55) 26px,
+          rgba(15, 23, 42, 0.55) 33px
+        );
+      background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+      opacity: 0.9;
+      mix-blend-mode: soft-light;
+    }
+
+    /* 🌲 숲 테마 (소프트 버전): 세로 줄무늬 제거, 윗부분 수관 + 바닥 느낌만 남김 */
+    body.theme-forest::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background-image:
+        /* 위쪽 수관(나뭇잎) */
+        radial-gradient(circle at top,     rgba(74, 222, 128, 0.45), transparent 60%),
+        radial-gradient(circle at 15% 0%,  rgba(52, 211, 153, 0.40), transparent 55%),
+        radial-gradient(circle at 85% 0%,  rgba(34, 197, 94, 0.40), transparent 55%),
+        /* 아래쪽 숲 바닥/그늘 */
+        radial-gradient(circle at 50% 100%, rgba(15, 118, 110, 0.55), transparent 65%),
+        radial-gradient(circle at 20% 100%, rgba(4, 120, 87, 0.45), transparent 70%),
+        radial-gradient(circle at 80% 100%, rgba(6, 95, 70, 0.45), transparent 70%),
+        /* 살짝 들어오는 햇살 */
+        linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 55%);
+      background-size: 100% 100%;
+      opacity: 0.9;
+      mix-blend-mode: soft-light;
+    }
+
+/* 🔤 우주/네온 테마에서도 칸 편집 영역 글씨는 항상 진한 색으로 */
+body.theme-space .cell-edit-card,
+body.theme-space .cell-edit-card * {
+  color: #111827;
+}
+
+body.theme-neon .cell-edit-card,
+body.theme-neon .cell-edit-card * {
+  color: #111827;
+}
+
+/* ✅ 단, 활성화된 버튼은 흰 글씨 유지 (파란 그라데이션 버튼) */
+body.theme-space .cell-edit-btn.active,
+body.theme-neon .cell-edit-btn.active {
+  color: #f9fafb;
+}
+/* === 배경 절단 현상 수정용 – 숲/사막 배경 다시 정의 === */
+
+/* 숲 테마: 위는 짙은 숲, 아래로 갈수록 밝은 초록으로 부드럽게 */
+body.theme-forest {
+  background: linear-gradient(
+    to bottom,
+    #14532d 0%,   /* 가장 위 – 진한 숲 초록 */
+    #166534 30%,  /* 중간 위쪽 */
+    #22c55e 60%,  /* 중간 – 선명한 초록 */
+    #bbf7d0 100%  /* 맨 아래 – 밝은 연두 */
+  );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* (옵션) 사막 테마도 혹시 비슷하게 느껴지면 같이 부드럽게 */
+body.theme-desert {
+  background: linear-gradient(
+    to bottom,
+    #a16207 0%,   /* 위 – 짙은 모래/바위색 */
+    #f97316 35%,  /* 중간 – 주황빛 모래 */
+    #fdba74 70%,  /* 아래 – 밝은 모래색 */
+    #fef3c7 100%  /* 맨 아래 – 아주 연한 모래색 */
+  );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* 🌌 우주 테마: 기존 별 위에 큰 별 몇 개 추가 레이어 */
+body.theme-space::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;              /* 게임 화면 뒤쪽에만 보이게 */
+  opacity: 0.95;
+  mix-blend-mode: screen;
+  filter: brightness(1.6) drop-shadow(0 0 4px white);
+
+  /* 7px / 6px / 5px 정도 크기의 별들을 1/3씩 배치 */
+  background-image:
+    radial-gradient(7px 7px at 12% 12%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(6px 6px at 32% 20%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(5px 5px at 55% 18%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(7px 7px at 78% 22%, rgba(226, 232, 240, 1.0), transparent 60%),
+
+    radial-gradient(6px 6px at 18% 45%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(5px 5px at 45% 40%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(7px 7px at 70% 48%, rgba(226, 232, 240, 1.0), transparent 60%),
+    radial-gradient(6px 6px at 90% 42%, rgba(255, 255, 255, 1.0), transparent 60%),
+
+    radial-gradient(5px 5px at 22% 72%, rgba(248, 250, 252, 1.0), transparent 60%),
+    radial-gradient(7px 7px at 52% 78%, rgba(255, 255, 255, 1.0), transparent 60%),
+    radial-gradient(6px 6px at 78% 74%, rgba(226, 232, 240, 1.0), transparent 60%);
+}
+
+</style>
 </head>
 <body class="theme-default">
   <h1>주사위 보드게임</h1>
@@ -858,6 +1448,10 @@
               <option value="6">6명</option>
             </select>
           </label>
+           <label>
+            전체 칸수:
+            <input type="number" id="boardSizeInput" min="6" max="200" value="30" />
+          </label>
           <label>
             테마:
             <select id="themeSelect">
@@ -868,10 +1462,92 @@
               <option value="neon">네온</option>
             </select>
           </label>
-          <label>
-            전체 칸수:
-            <input type="number" id="boardSizeInput" min="6" max="200" value="30" />
-          </label>
+
+          <button id="startBtn">게임 시작 / 리셋</button>
+        </div>
+      </div>
+
+      <div class="dice-box">
+<div class="dice-row">
+  <button id="rollBtn">🎲 주사위 굴리기</button>
+  <button id="skipBtn">⏭️ 턴 스킵</button>
+  <div class="dice-visual" id="diceVisual">-</div>
+  <div class="cheat-badge">
+    <span id="cheatText">치트: 없음</span>
+  </div>
+
+  <!-- 🔽 치트 커맨드 입력창을 여기로 이동 -->
+  <label class="cheat-input">
+    커맨드:
+    <input type="text" id="secretCodeInput" placeholder="치트 코드" />
+  </label>
+</div>
+
+        <div class="dice-value" id="diceInfo">
+          게임을 시작한 뒤 주사위를 굴려 보세요.
+        </div>
+      </div>
+    </div>
+
+    <div class="board" id="board"></div>
+
+     <!-- 🔽 칸 편집 모드 카드 (접기/펼치기 가능 버전) -->
+    <div class="cell-edit-card" id="cellEditCard">
+      <div class="cell-edit-header">
+        <div class="cell-edit-title">
+          <span class="cell-edit-title-icon">🛠</span>
+          <span>칸 편집 모드</span>
+        </div>
+
+        <!-- 접기 / 펼치기 버튼 -->
+        <button type="button"
+                class="cell-edit-toggle"
+                id="cellEditToggleBtn">
+          칸 편집 접기 ▲
+        </button>
+
+        <div class="cell-edit-sub">
+          버튼을 고른 뒤, 위 보드 칸을 클릭해서 특수 칸으로 설정하세요.
+        </div>
+      </div>
+
+      <!-- 이 안쪽 부분 전체가 접혔다/펼쳐짐 -->
+      <div class="cell-edit-body" id="cellEditBody">
+        <div class="cell-edit-panel">
+          <button type="button" class="cell-edit-btn active" data-mode="off">
+            <span class="cell-edit-btn-icon">🚫</span>
+            <span>편집 끔</span>
+          </button>
+          <button type="button" class="cell-edit-btn" data-mode="x2">
+            <span class="cell-edit-btn-icon">🚀</span>
+            <span>x2</span>
+          </button>
+          <button type="button" class="cell-edit-btn" data-mode="half">
+            <span class="cell-edit-btn-icon">🐢</span>
+            <span>1/2</span>
+          </button>
+          <button type="button" class="cell-edit-btn" data-mode="trap">
+            <span class="cell-edit-btn-icon">💣</span>
+            <span>함정</span>
+          </button>
+          <button type="button" class="cell-edit-btn" data-mode="gkey">
+            <span class="cell-edit-btn-icon">✨</span>
+            <span>황금열쇠</span>
+          </button>
+          <button type="button" class="cell-edit-btn" data-mode="clear">
+            <span class="cell-edit-btn-icon">⛔</span>
+            <span>지우기</span>
+          </button>
+        </div>
+
+        <div class="cell-edit-hint">
+          • 출발(0), 도착 칸은 편집할 수 없습니다. <br />
+          • 같은 칸에 x2/1/2/함정/황금열쇠를 겹쳐서 설정하지 않도록 주의하세요. <br />
+          • 아래 입력칸에서 숫자로도 직접 특수 칸을 설정할 수 있습니다.
+        </div>
+
+        <!-- 🔧 x2 / 1/2 / 함정 / 황금열쇠 칸 범위 설정 입력 -->
+        <div class="cell-range-edit">
           <label>
             x2 칸:
             <input type="text" id="x2CellsInput" placeholder="예: 2,5,9 또는 2~4" />
@@ -888,52 +1564,11 @@
             황금열쇠 칸:
             <input type="text" id="gKeyCellsInput" placeholder="예: 2,7 또는 10~12" />
           </label>
-          <label>
-            커맨드:
-            <input type="text" id="secretCodeInput" placeholder="치트 코드" />
-          </label>
-          <button id="startBtn">게임 시작 / 리셋</button>
-        </div>
-      </div>
-
-      <div class="dice-box">
-        <div class="dice-row">
-          <button id="rollBtn">🎲 주사위 굴리기</button>
-          <button id="skipBtn">⏭️ 턴 스킵</button>
-          <div class="dice-visual" id="diceVisual">-</div>
-          <div class="cheat-badge">
-            <span id="cheatText">치트: 없음</span>
-          </div>
-        </div>
-        <div class="dice-value" id="diceInfo">
-          게임을 시작한 뒤 주사위를 굴려 보세요.
         </div>
       </div>
     </div>
+    <!-- 🔼 칸 편집 모드 카드 끝 -->
 
-    <div class="board" id="board"></div>
-
-    <div class="legend">
-      <div class="legend-item">
-        <div class="legend-color boost"></div> x2 배속 칸:
-        <span id="boostRangeText">없음</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color slow"></div> 1/2 배속 칸:
-        <span id="slowRangeText">없음</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color reset"></div> 출발로 되돌아가는 칸:
-        <span id="resetRangeText">없음</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-color gkey"></div> 황금열쇠 칸:
-        <span id="gKeyRangeText">없음</span>
-      </div>
-      <div class="legend-item">
-        ⚑ 0칸: 출발, 마지막 칸: 도착
-      </div>
-    </div>
 
     <div class="players-legend" id="playersLegend"></div>
 
@@ -952,21 +1587,22 @@
   </div>
 
   <!-- 🎵 효과음 -->
-  <audio id="seClick"  src="click.mp3"  preload="auto"></audio>
-  <audio id="seDice"   src="dice.mp3"   preload="auto"></audio>
-  <audio id="seTrap"   src="trap.mp3"   preload="auto"></audio>
-  <audio id="seGolden" src="golden.mp3" preload="auto"></audio>
-  <audio id="seCheat"  src="cheat.mp3"  preload="auto"></audio>
-  <audio id="seWin"    src="win.mp3"    preload="auto"></audio>
-  <audio id="seShield" src="shield.mp3" preload="auto"></audio>
-  <audio id="seSpeed"  src="speed.mp3"  preload="auto"></audio>
-  <audio id="seSpeedHalf" src="speed_half.mp3" preload="auto"></audio>
+  <audio id="seClick"  src="game/click.mp3"  preload="auto"></audio>
+  <audio id="seDice"   src="game/dice.mp3"   preload="auto"></audio>
+  <audio id="seTrap"   src="game/trap.mp3"   preload="auto"></audio>
+  <audio id="seGolden" src="game/golden.mp3" preload="auto"></audio>
+  <audio id="seCheat"  src="game/cheat.mp3"  preload="auto"></audio>
+  <audio id="seWin"    src="game/win.mp3"    preload="auto"></audio>
+  <audio id="seShield" src="game/shield.mp3" preload="auto"></audio>
+  <audio id="seSpeed"  src="game/speed.mp3"  preload="auto"></audio>
+  <audio id="seSpeedHalf" src="game/speed_half.mp3" preload="auto"></audio>
 
   <script>
     let BOARD_SIZE = 30;
     let specialZones = [];
     let resetCells = [];
     let goldenKeyCells = [];
+    let cellEditMode = "off";
 
     const PLAYER_COLORS = [
       "#ef4444",
@@ -1029,6 +1665,10 @@
     const cheatPopupTextEl = document.getElementById("cheatPopupText");
     const cheatPopupIconEl = document.getElementById("cheatPopupIcon");
     const themeSelect = document.getElementById("themeSelect");
+    const cellEditButtons = document.querySelectorAll(".cell-edit-btn");
+    const cellEditCardEl = document.getElementById("cellEditCard");
+    const cellEditBodyEl = document.getElementById("cellEditBody");
+    const cellEditToggleBtn = document.getElementById("cellEditToggleBtn");
 
     const THEME_CLASS_LIST = [
       "theme-default",
@@ -1509,6 +2149,11 @@
           <div class="token-container"></div>
         `;
 
+        // 보드 칸 클릭 시 편집 모드 동작
+        cell.addEventListener("click", () => {
+          handleCellClick(i);
+        });
+
         boardEl.appendChild(cell);
         const tokenContainer = cell.querySelector(".token-container");
         cellTokenEls.push(tokenContainer);
@@ -1562,6 +2207,155 @@
       resetRangeText.textContent = resetCells.length ? resetCells.join(", ") + "번 칸" : "없음";
       gKeyRangeText.textContent = goldenKeyCells.length ? goldenKeyCells.join(", ") + "번 칸" : "없음";
     }
+
+    function setCellMultiplierSingle(index, multiplier) {
+      // 해당 칸의 배속 정보를 단일 칸 기준으로 관리
+      specialZones = specialZones.filter((z) => !(z.start === index && z.end === index));
+      if (multiplier === 1) return;
+      const label = multiplier > 1 ? "x2 칸" : "1/2 칸";
+      specialZones.push({ start: index, end: index, multiplier, label });
+    }
+
+    function toggleValueInArray(arr, value) {
+      const idx = arr.indexOf(value);
+      if (idx >= 0) {
+        arr.splice(idx, 1);
+        return false;
+      } else {
+        arr.push(value);
+        arr.sort((a, b) => a - b);
+        return true;
+      }
+    }
+
+    function syncInputsFromState() {
+      const x2Arr = [];
+      const halfArr = [];
+      specialZones.forEach((z) => {
+        if (z.start === z.end) {
+          if (z.multiplier > 1) x2Arr.push(z.start);
+          else if (z.multiplier < 1) halfArr.push(z.start);
+        }
+      });
+
+      const uniqSorted = (arr) => Array.from(new Set(arr)).sort((a, b) => a - b);
+
+      if (typeof x2CellsInput !== "undefined" && x2CellsInput) {
+        x2CellsInput.value = uniqSorted(x2Arr).join(", ");
+      }
+      if (typeof halfCellsInput !== "undefined" && halfCellsInput) {
+        halfCellsInput.value = uniqSorted(halfArr).join(", ");
+      }
+      if (typeof resetCellsInput !== "undefined" && resetCellsInput) {
+        resetCellsInput.value = uniqSorted(resetCells).join(", ");
+      }
+      if (typeof gKeyCellsInput !== "undefined" && gKeyCellsInput) {
+        gKeyCellsInput.value = uniqSorted(goldenKeyCells).join(", ");
+      }
+
+      updateLegendText();
+    }
+
+        function handleCellClick(index) {
+      // 편집 모드가 아니면 아무 일도 하지 않음
+      if (cellEditMode === "off") return;
+      // 출발(0), 도착(BOARD_SIZE-1)은 편집 불가
+      if (index <= 0 || index >= BOARD_SIZE - 1) return;
+
+      // 현재 보드 크기 기준으로 입력값을 다시 해석
+      let sizeVal = parseInt(boardSizeInput.value, 10);
+      if (isNaN(sizeVal) || sizeVal < 6) sizeVal = 30;
+      const boardSize = Math.max(6, Math.min(sizeVal, 200));
+
+      const x2Arr = parseCellList(x2CellsInput.value, boardSize);
+      const halfArr = parseCellList(halfCellsInput.value, boardSize);
+      const trapArr = parseCellList(resetCellsInput.value, boardSize);
+      const gkeyArr = parseCellList(gKeyCellsInput.value, boardSize);
+
+      const x2Set = new Set(x2Arr);
+      const halfSet = new Set(halfArr);
+      const trapSet = new Set(trapArr);
+      const gkeySet = new Set(gkeyArr);
+
+      let changed = false;
+
+      if (cellEditMode === "x2") {
+        if (x2Set.has(index)) {
+          x2Set.delete(index);
+        } else {
+          x2Set.add(index);
+        }
+        // x2와 1/2는 동시에 있을 수 없도록 1/2 쪽에서 제거
+        halfSet.delete(index);
+        changed = true;
+      } else if (cellEditMode === "half") {
+        if (halfSet.has(index)) {
+          halfSet.delete(index);
+        } else {
+          halfSet.add(index);
+        }
+        // 1/2를 설정하면 x2는 제거
+        x2Set.delete(index);
+        changed = true;
+      } else if (cellEditMode === "trap") {
+        if (trapSet.has(index)) {
+          trapSet.delete(index);
+        } else {
+          trapSet.add(index);
+        }
+        changed = true;
+      } else if (cellEditMode === "gkey") {
+        if (gkeySet.has(index)) {
+          gkeySet.delete(index);
+        } else {
+          gkeySet.add(index);
+        }
+        changed = true;
+      } else if (cellEditMode === "clear") {
+        const before =
+          x2Set.size + halfSet.size + trapSet.size + gkeySet.size;
+        x2Set.delete(index);
+        halfSet.delete(index);
+        trapSet.delete(index);
+        gkeySet.delete(index);
+        const after =
+          x2Set.size + halfSet.size + trapSet.size + gkeySet.size;
+        changed = before !== after;
+      }
+
+      if (!changed) return;
+
+      const sortArr = (set) => Array.from(set).sort((a, b) => a - b);
+
+      const x2New = sortArr(x2Set);
+      const halfNew = sortArr(halfSet);
+      const trapNew = sortArr(trapSet);
+      const gkeyNew = sortArr(gkeySet);
+
+      // 입력창 문자열 갱신
+      x2CellsInput.value = x2New.join(", ");
+      halfCellsInput.value = halfNew.join(", ");
+      resetCellsInput.value = trapNew.join(", ");
+      gKeyCellsInput.value = gkeyNew.join(", ");
+
+      // 실제 게임 상태(specialZones, resetCells, goldenKeyCells)도 다시 구성
+      specialZones = [];
+      x2New.forEach((n) => {
+        specialZones.push({ start: n, end: n, multiplier: 2, label: "x2 칸" });
+      });
+      halfNew.forEach((n) => {
+        specialZones.push({ start: n, end: n, multiplier: 0.5, label: "1/2 칸" });
+      });
+      resetCells = trapNew;
+      goldenKeyCells = gkeyNew;
+
+      // 보드/말 및 범례 갱신
+      renderBoard();
+      renderTokens();
+      updateLegendText();
+    }
+
+
 
     function animateMove(player, steps, onComplete) {
       if (steps <= 0) {
@@ -2113,6 +2907,29 @@
     themeSelect.addEventListener("change", (e) => {
       applyTheme(e.target.value);
     });
+
+    if (cellEditButtons && cellEditButtons.length) {
+      cellEditButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          cellEditButtons.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          cellEditMode = btn.dataset.mode || "off";
+          playSound("click");
+        });
+      });
+    }
+  // 🔽 칸 편집 모드 접기 / 펼치기
+    if (cellEditToggleBtn && cellEditCardEl && cellEditBodyEl) {
+      cellEditToggleBtn.addEventListener("click", () => {
+        const collapsed = cellEditCardEl.classList.toggle("collapsed");
+        if (collapsed) {
+          cellEditToggleBtn.textContent = "칸 편집 열기 ▼";
+        } else {
+          cellEditToggleBtn.textContent = "칸 편집 접기 ▲";
+        }
+        playSound("click");
+      });
+    }
 
     applyTheme(themeSelect.value);
     setupGame();
